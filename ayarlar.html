@@ -43,6 +43,8 @@
         .list-item { display: flex; justify-content: space-between; align-items: center; background: white; padding: 8px 12px; border: 1px solid #e2e8f0; margin-bottom: 5px; border-radius: 6px; font-size: 0.85rem; }
         .btn-del { background: #e53e3e; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 0.75rem; }
         .btn-edit { background: #3182ce; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 0.75rem; margin-right: 4px; }
+        .btn-default { background: #d69e2e; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 0.75rem; margin-right: 4px; }
+        .badge-default { background: #ecc94b; color: #744210; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; margin-left: 6px; }
         .btn-back { display: block; text-align: center; margin-top: 20px; color: #718096; text-decoration: none; font-weight: 500;}
         .loading { color: #e53e3e; font-size: 0.8rem; text-align: center; margin-bottom: 10px; }
     </style>
@@ -64,16 +66,16 @@
             <div class="form-group">
                 <label>Cihaz Kısıtlaması:</label>
                 <select id="deviceSelect">
-                    <option value="all">Tüm Cihazlar</option>
-                    <option value="mobile">Sadece Cep Telefonu</option>
-                    <option value="pc">Sadece Bilgisayar</option>
+                    <option value="all">🌐 Tüm Cihazlar</option>
+                    <option value="mobile">📱 Sadece Cep Telefonu</option>
+                    <option value="pc">💻 Sadece Bilgisayar</option>
                 </select>
             </div>
             <div class="form-group">
                 <label>Konum Kısıtlaması:</label>
                 <select id="locationSelect">
-                    <option value="false">Konum Fark Etmez</option>
-                    <option value="true">Sadece Evdeyken Girebilir</option>
+                    <option value="false">🌐 Konum Fark Etmez</option>
+                    <option value="true">🏠 Sadece Evdeyken Girebilir</option>
                 </select>
             </div>
             <button class="btn" id="saveBtn" onclick="kullaniciKaydet()">Kullanıcıyı Kaydet</button>
@@ -100,11 +102,11 @@
         <div class="section-box blue">
             <label>⚡ Fatura Abone / Sözleşme No Tanımla</label>
             <select id="yeniAboneTur">
-                <option value="Elektrik">Elektrik</option>
-                <option value="Su">Su</option>
-                <option value="Doğalgaz">Doğalgaz</option>
-                <option value="İnternet / TV">İnternet / TV</option>
-                <option value="Diğer">Diğer</option>
+                <option value="⚡ Elektrik">⚡ Elektrik</option>
+                <option value="💧 Su">💧 Su / Sulama</option>
+                <option value="🔥 Doğalgaz">🔥 Doğalgaz</option>
+                <option value="🌐 İnternet / TV">🌐 İnternet / TV</option>
+                <option value="📑 Diğer">📑 Diğer</option>
             </select>
             <input type="text" id="yeniAboneNo" placeholder="Abone / Sözleşme No">
             <input type="text" id="yeniAboneEtiket" placeholder="Açıklama (Örn: Tarla Sayacı)">
@@ -134,10 +136,7 @@
     <script>
         document.getElementById('adminLabel').innerText = "Admin: " + ADMIN_KULLANICI.toUpperCase();
 
-        // -------------------------------------------------------------
-        // FIREBASE BİLGİLERİNİZİ BURAYA EKLENİN
-        // -------------------------------------------------------------
-       const firebaseConfig = {
+        const firebaseConfig = {
             apiKey: "AIzaSyApN7vhnM30cQ1RdAsXiUS8AY08G2QklYY",
             authDomain: "findikhasattakip.firebaseapp.com",
             databaseURL: "https://findikhasattakip-default-rtdb.firebaseio.com",
@@ -159,38 +158,53 @@
         let localAbonelikler = [];
         let localKisiler = [];
         let localSezonlar = [];
+        let localVarsayilanlar = {};
 
-        // --- FIREBASE CANLI DİNLEYİCİLERİ (REALTIME LISTENERS) ---
+        // --- FIREBASE CANLI DİNLEYİCİLERİ ---
         
-        // 1. Kullanıcılar
+        // Varsayılanlar
+        db.ref('varsayilanlarDB').on('value', (snapshot) => {
+            localVarsayilanlar = snapshot.val() || {};
+            renderAraclar();
+            renderAbonelikler();
+            renderKisiler();
+            renderSezonlar();
+        });
+
+        // Kullanıcılar
         db.ref('usersDB').on('value', (snapshot) => {
             localUsers = snapshot.val() || {};
             kullaniciListesiniGuncelle();
         });
 
-        // 2. Araçlar
+        // Araçlar
         db.ref('araclarDB').on('value', (snapshot) => {
             localAraclar = snapshot.val() || [];
             renderAraclar();
         });
 
-        // 3. Abonelikler
+        // Abonelikler
         db.ref('aboneliklerDB').on('value', (snapshot) => {
             localAbonelikler = snapshot.val() || [];
             renderAbonelikler();
         });
 
-        // 4. Kişiler
+        // Kişiler
         db.ref('kisilerDB').on('value', (snapshot) => {
             localKisiler = snapshot.val() || [];
             renderKisiler();
         });
 
-        // 5. Sezonlar
+        // Sezonlar
         db.ref('sezonlarDB').on('value', (snapshot) => {
             localSezonlar = snapshot.val() || [];
             renderSezonlar();
         });
+
+        // --- VARSAYILAN DEĞER ATAMA FONKSİYONU ---
+        function varsayilanYap(kategori, deger) {
+            db.ref(`varsayilanlarDB/${kategori}`).set(deger);
+        }
 
         // --- KULLANICI İŞLEMLERİ ---
         function kullaniciListesiniGuncelle() {
@@ -261,44 +275,119 @@
             document.getElementById('cancelBtn').style.display = "none";
         }
 
-        // --- DİĞER VERİ İŞLEMLERİ ---
+        // --- ARAÇ İŞLEMLERİ ---
         function renderAraclar() {
-            document.getElementById('aracListesi').innerHTML = localAraclar.map((item, i) => `
-                <li class="list-item"><b>${item}</b><button class="btn-del" onclick="listeElemanSil('araclarDB', ${i})">Sil</button></li>`).join('');
+            const def = localVarsayilanlar.arac;
+            document.getElementById('aracListesi').innerHTML = localAraclar.map((item, i) => {
+                const isDefault = item === def;
+                return `
+                <li class="list-item">
+                    <div>
+                        <b>${item}</b>
+                        ${isDefault ? '<span class="badge-default">⭐ Varsayılan</span>' : ''}
+                    </div>
+                    <div>
+                        ${!isDefault ? `<button class="btn-default" onclick="varsayilanYap('arac', '${item}')">⭐ Varsayılan Yap</button>` : ''}
+                        <button class="btn-del" onclick="listeElemanSil('araclarDB', ${i})">Sil</button>
+                    </div>
+                </li>`;
+            }).join('');
         }
         function aracEkle() {
             const v = document.getElementById('yeniPlaka').value.trim().toUpperCase();
-            if(v) { localAraclar.push(v); db.ref('araclarDB').set(localAraclar); document.getElementById('yeniPlaka').value = ""; }
+            if(v) { 
+                localAraclar.push(v); 
+                db.ref('araclarDB').set(localAraclar); 
+                if(!localVarsayilanlar.arac) varsayilanYap('arac', v);
+                document.getElementById('yeniPlaka').value = ""; 
+            }
         }
 
+        // --- ABONELİK İŞLEMLERİ ---
         function renderAbonelikler() {
-            document.getElementById('aboneListesi').innerHTML = localAbonelikler.map((item, i) => `
-                <li class="list-item"><div><b>[${item.tur}]</b> ${item.no} <small style="color:#718096">(${item.etiket||''})</small></div>
-                <button class="btn-del" onclick="listeElemanSil('aboneliklerDB', ${i})">Sil</button></li>`).join('');
+            const def = localVarsayilanlar.abonelik;
+            document.getElementById('aboneListesi').innerHTML = localAbonelikler.map((item, i) => {
+                const isDefault = item.no === def;
+                return `
+                <li class="list-item">
+                    <div>
+                        <b>[${item.tur}]</b> ${item.no} <small style="color:#718096">(${item.etiket||''})</small>
+                        ${isDefault ? '<span class="badge-default">⭐ Varsayılan</span>' : ''}
+                    </div>
+                    <div>
+                        ${!isDefault ? `<button class="btn-default" onclick="varsayilanYap('abonelik', '${item.no}')">⭐ Varsayılan Yap</button>` : ''}
+                        <button class="btn-del" onclick="listeElemanSil('aboneliklerDB', ${i})">Sil</button>
+                    </div>
+                </li>`;
+            }).join('');
         }
         function aboneEkle() {
             const tur = document.getElementById('yeniAboneTur').value;
             const no = document.getElementById('yeniAboneNo').value.trim();
             const etiket = document.getElementById('yeniAboneEtiket').value.trim();
-            if(no) { localAbonelikler.push({ tur, no, etiket }); db.ref('aboneliklerDB').set(localAbonelikler); document.getElementById('yeniAboneNo').value = ""; document.getElementById('yeniAboneEtiket').value = ""; }
+            if(no) { 
+                localAbonelikler.push({ tur, no, etiket }); 
+                db.ref('aboneliklerDB').set(localAbonelikler); 
+                if(!localVarsayilanlar.abonelik) varsayilanYap('abonelik', no);
+                document.getElementById('yeniAboneNo').value = ""; 
+                document.getElementById('yeniAboneEtiket').value = ""; 
+            }
         }
 
+        // --- KİŞİ İŞLEMLERİ ---
         function renderKisiler() {
-            document.getElementById('kisiListesi').innerHTML = localKisiler.map((item, i) => `
-                <li class="list-item"><b>${item}</b><button class="btn-del" onclick="listeElemanSil('kisilerDB', ${i})">Sil</button></li>`).join('');
+            const def = localVarsayilanlar.kisi;
+            document.getElementById('kisiListesi').innerHTML = localKisiler.map((item, i) => {
+                const isDefault = item === def;
+                return `
+                <li class="list-item">
+                    <div>
+                        <b>${item}</b>
+                        ${isDefault ? '<span class="badge-default">⭐ Varsayılan</span>' : ''}
+                    </div>
+                    <div>
+                        ${!isDefault ? `<button class="btn-default" onclick="varsayilanYap('kisi', '${item}')">⭐ Varsayılan Yap</button>` : ''}
+                        <button class="btn-del" onclick="listeElemanSil('kisilerDB', ${i})">Sil</button>
+                    </div>
+                </li>`;
+            }).join('');
         }
         function kisiEkle() {
             const v = document.getElementById('yeniKisi').value.trim();
-            if(v) { localKisiler.push(v); db.ref('kisilerDB').set(localKisiler); document.getElementById('yeniKisi').value = ""; }
+            if(v) { 
+                localKisiler.push(v); 
+                db.ref('kisilerDB').set(localKisiler); 
+                if(!localVarsayilanlar.kisi) varsayilanYap('kisi', v);
+                document.getElementById('yeniKisi').value = ""; 
+            }
         }
 
+        // --- SEZON İŞLEMLERİ ---
         function renderSezonlar() {
-            document.getElementById('sezonListesi').innerHTML = localSezonlar.map((item, i) => `
-                <li class="list-item"><b>${item}</b><button class="btn-del" onclick="listeElemanSil('sezonlarDB', ${i})">Sil</button></li>`).join('');
+            const def = localVarsayilanlar.sezon;
+            document.getElementById('sezonListesi').innerHTML = localSezonlar.map((item, i) => {
+                const isDefault = item.toString() === def?.toString();
+                return `
+                <li class="list-item">
+                    <div>
+                        <b>${item}</b>
+                        ${isDefault ? '<span class="badge-default">⭐ Varsayılan</span>' : ''}
+                    </div>
+                    <div>
+                        ${!isDefault ? `<button class="btn-default" onclick="varsayilanYap('sezon', '${item}')">⭐ Varsayılan Yap</button>` : ''}
+                        <button class="btn-del" onclick="listeElemanSil('sezonlarDB', ${i})">Sil</button>
+                    </div>
+                </li>`;
+            }).join('');
         }
         function sezonEkle() {
             const v = document.getElementById('yeniSezon').value.trim();
-            if(v) { localSezonlar.push(v); db.ref('sezonlarDB').set(localSezonlar); document.getElementById('yeniSezon').value = ""; }
+            if(v) { 
+                localSezonlar.push(v); 
+                db.ref('sezonlarDB').set(localSezonlar); 
+                if(!localVarsayilanlar.sezon) varsayilanYap('sezon', v);
+                document.getElementById('yeniSezon').value = ""; 
+            }
         }
 
         function listeElemanSil(dbPath, index) {

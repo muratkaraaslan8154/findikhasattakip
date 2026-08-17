@@ -3,65 +3,67 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gübreleme İşlemleri</title>
+    <title>Gübre & İlaçlama Masrafları</title>
     <script>if (localStorage.getItem('isLoggedIn') !== 'true') window.location.replace('giris.html');</script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
         body { font-family: 'Roboto', sans-serif; background-color: #f4f6f9; padding: 1rem; display: flex; flex-direction: column; align-items: center; }
-        .container { width: 100%; max-width: 500px; background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        .container { width: 100%; max-width: 600px; background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
         h2 { color: #38a169; margin-top: 0; border-bottom: 2px solid #38a169; padding-bottom: 10px; }
         .form-section { background: #f7fafc; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #38a169; }
         .form-group { margin-bottom: 12px; }
         label { display: block; font-size: 0.85rem; font-weight: bold; margin-bottom: 5px; color: #4a5568;}
         input, select { width: 100%; padding: 10px; border: 1px solid #cbd5e0; border-radius: 6px; box-sizing: border-box; font-size: 0.95rem; }
         .row { display: flex; gap: 10px; } .row > div { flex: 1; }
-        .btn-save { background: #38a169; color: white; width: 100%; padding: 14px; border: none; border-radius: 6px; font-weight: bold; font-size: 1rem; cursor: pointer; transition: background 0.2s;}
-        .btn-save:hover { background: #2f855a; }
+        .btn-save { background: #38a169; color: white; width: 100%; padding: 14px; border: none; border-radius: 6px; font-weight: bold; font-size: 1rem; cursor: pointer; }
+        .btn-cancel { background: #a0aec0; margin-top: 8px; display: none; }
         .btn-back { display: block; text-align: center; margin-top: 20px; color: #718096; text-decoration: none; font-weight: 500;}
+        .record-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; margin-bottom: 10px; font-size: 0.88rem; }
+        .record-header { display: flex; justify-content: space-between; font-weight: bold; color: #38a169; border-bottom: 1px solid #edf2f7; padding-bottom: 6px; margin-bottom: 8px; }
+        .btn-sm { padding: 4px 8px; font-size: 0.75rem; border-radius: 4px; border: none; cursor: pointer; font-weight: bold; }
+        .btn-edit { background: #3182ce; color: white; }
+        .btn-history { background: #dd6b20; color: white; margin-left: 5px; }
+        .history-box { background: #fffaf0; border-left: 3px solid #dd6b20; padding: 8px; margin-top: 8px; font-size: 0.8rem; display: none; border-radius: 4px; color: #7b341e; }
+        .log-item { border-bottom: 1px dashed #cbd5e0; padding: 4px 0; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h2>🌱 Gübreleme İşlemleri</h2>
-        
+        <h2>🌱 Gübre & İlaçlama Masrafı</h2>
+        <input type="hidden" id="editKey">
+
         <div class="form-section">
             <div class="row">
                 <div class="form-group"><label>Sezon (Yıl)</label><select id="sezonSecici"></select></div>
                 <div class="form-group"><label>Tarih</label><input type="date" id="tarih"></div>
             </div>
-            <div class="form-group"><label>Gübre Türü / Cinsi</label><input type="text" id="gubreTuru" placeholder="Örn: 26'lık Nitrat, 15-15-15..."></div>
+            <div class="form-group"><label>İşlem Türü / Malzeme Adı</label><input type="text" id="malzemeAdi" placeholder="Örn: Yaprak Gübresi / Taban Gübresi"></div>
             <div class="row">
-                <div class="form-group"><label>Çuval Adedi</label><input type="number" id="cuvalAdet" placeholder="0" oninput="gubreHesapla()"></div>
-                <div class="form-group"><label>Çuval Fiyatı (TL)</label><input type="number" id="cuvalFiyat" placeholder="0" oninput="gubreHesapla()"></div>
+                <div class="form-group"><label>Miktar (Adet/Kg/Çuval)</label><input type="number" id="gubreMiktar" placeholder="0" step="0.1" oninput="gubreHesapla()"></div>
+                <div class="form-group"><label>Birim Fiyatı (TL)</label><input type="number" id="gubreBirimFiyat" placeholder="0.00" step="0.1" oninput="gubreHesapla()"></div>
             </div>
-            <div class="form-group"><label>Gübre Toplam Tutar (TL)</label><input type="number" id="gubreToplamMaliyet" placeholder="0"></div>
-        </div>
-
-        <div class="form-section" style="border-left-color: #dd6b20;">
-            <label style="color: #2d3748; font-size: 1rem; margin-bottom: 10px;">🚚 Nakliye & İşçilik</label>
             <div class="row">
-                <div class="form-group"><label>Nakliye / Kamyon (TL)</label><input type="number" id="nakliye" placeholder="0"></div>
-                <div class="form-group"><label>Traktör / ATV Taşıma (TL)</label><input type="number" id="traktor" placeholder="0"></div>
-            </div>
-            <div class="form-group"><label>Attırma İşçilik Yevmiyesi (TL)</label><input type="number" id="yevmiyeUcreti" placeholder="0"></div>
-            <div class="row">
-                <div class="form-group"><label>Eldiven / Sarf (TL)</label><input type="number" id="eldiven" placeholder="0"></div>
-                <div class="form-group"><label>Yemek (TL)</label><input type="number" id="yemek" placeholder="0"></div>
+                <div class="form-group"><label>Gübre/İlaç Tutar (TL)</label><input type="number" id="gubreTutar" placeholder="0.00"></div>
+                <div class="form-group"><label>İşçilik / Atım Ücreti (TL)</label><input type="number" id="iscilikUcreti" placeholder="0.00"></div>
             </div>
         </div>
 
-        <!-- Yenilenmiş Yol Masrafı Alanı -->
+        <!-- 🚗 TARLAYA GİDİŞ - GELİŞ YOL MASRAFI -->
         <div class="form-section" style="border-left-color: #805ad5;">
-            <label style="color: #2d3748; font-size: 1rem; margin-bottom: 10px; display: block; font-weight: bold;">🚗 Tarlaya Gidiş - Geliş Yol Masrafı</label>
+            <label style="color: #2d3748; font-size: 0.95rem; margin-bottom: 10px; display: block; font-weight: bold;">🚗 Tarlaya Gidiş - Geliş Yol Masrafı</label>
             <div class="form-group"><label>Araç Plakası</label><select id="aracPlaka"></select></div>
             <div class="row">
-                <div class="form-group"><label>Yapılan KM</label><input type="number" id="yapilanKm" placeholder="0"></div>
-                <div class="form-group"><label>Yakıt Litresi</label><input type="number" id="yolLitre" placeholder="0" step="0.1" oninput="yolHesapla()"></div>
+                <div class="form-group"><label>Yapılan KM</label><input type="number" id="yapilanKm" placeholder="Örn: 100" oninput="yolHesapla()"></div>
+                <div class="form-group"><label>Ort. Tüketim (L/100 KM)</label><input type="number" id="ortTuketim" placeholder="Örn: 7.5" step="0.1" oninput="yolHesapla()"></div>
             </div>
             <div class="row">
-                <div class="form-group"><label>Litre Fiyatı (TL)</label><input type="number" id="yolLitreFiyat" placeholder="0" step="0.1" oninput="yolHesapla()"></div>
-                <div class="form-group"><label>Otomatik Tutar (TL)</label><input type="number" id="yolMasrafi" placeholder="0.00"></div>
+                <div class="form-group"><label>Harcanan Yakıt Litresi</label><input type="number" id="yolLitre" placeholder="Otomatik/Manuel" step="0.1" oninput="yolHesapla()"></div>
+                <div class="form-group"><label>Litre Fiyatı (TL)</label><input type="number" id="yolLitreFiyat" placeholder="Örn: 44.5" step="0.1" oninput="yolHesapla()"></div>
             </div>
+            <div class="form-group"><label>Otomatik Tutar (TL)</label><input type="number" id="yolMasrafi" placeholder="0.00" readonly style="background:#edf2f7; font-weight:bold;"></div>
             <div class="form-group"><label>Yol / Araç Açıklaması</label><input type="text" id="yolAciklama" placeholder="Örn: Gübre taşıma yakıtı..."></div>
         </div>
 
@@ -69,71 +71,197 @@
             <div class="form-group"><label>💰 Ödemeyi Yapan Alacaklı</label><select id="odeyenKisi"></select></div>
         </div>
 
-        <button class="btn-save" onclick="kaydet()">Verileri Kaydet</button>
+        <button class="btn-save" id="btnKaydet" onclick="kaydet()">Verileri Kaydet</button>
+        <button class="btn-save btn-cancel" id="btnIptal" onclick="formuSifirla()">İptal / Yeni Kayıt</button>
+
+        <h3 style="color: #2d3748; margin-top: 25px; font-size: 1.1rem;">📋 Kayıtlı Gübre & İlaç İşlemleri</h3>
+        <div id="kayitListesi">Yükleniyor...</div>
+
         <a href="index.html" class="btn-back">← Ana Menüye Dön</a>
     </div>
 
     <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyApN7vhnM30cQ1RdAsXiUS8AY08G2QklYY",
+            authDomain: "findikhasattakip.firebaseapp.com",
+            databaseURL: "https://findikhasattakip-default-rtdb.firebaseio.com",
+            projectId: "findikhasattakip",
+            storageBucket: "findikhasattakip.firebasestorage.app",
+            messagingSenderId: "296913243470",
+            appId: "1:296913243470:web:f2a6cfed4196ff44e0221f"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        let lokalDB = {};
         document.getElementById('tarih').valueAsDate = new Date();
 
-        // Sezon Hesaplama
-        const simdikiTarih = new Date();
-        let varsayilanSezon = simdikiTarih.getFullYear();
-        if (simdikiTarih.getMonth() >= 8) { varsayilanSezon += 1; }
-        varsayilanSezon = String(varsayilanSezon);
+        let varsayilanlar = {};
+        let sezonlar = [];
+        let kisiler = [];
+        let araclar = [];
 
-        let sezonlarDB = JSON.parse(localStorage.getItem('sezonlarDB')) || ["2026", "2027"];
-        if (!sezonlarDB.includes(varsayilanSezon)) sezonlarDB.push(varsayilanSezon);
+        // 🌟 FIREBASE CANLI VERİ DİNLEYİCİLERİ 🌟
 
-        const sezonSelect = document.getElementById('sezonSecici');
-        sezonlarDB.sort().reverse().forEach(s => {
-            sezonSelect.innerHTML += `<option value="${s}" ${s === varsayilanSezon ? 'selected' : ''}>${s}</option>`;
+        // 1. Varsayılanlar Dinleyici
+        db.ref('varsayilanlarDB').on('value', (snapshot) => {
+            varsayilanlar = snapshot.val() || {};
+            doldurSezonlar();
+            doldurKisiler();
+            doldurAraclar();
         });
 
-        // Ödeyen Kişi
-        const varsayilanKisi = "Murat Karaaslan";
-        let kisilerDB = JSON.parse(localStorage.getItem('kisilerDB')) || [varsayilanKisi, "Kardeşim"];
-        if (!kisilerDB.includes(varsayilanKisi)) kisilerDB.unshift(varsayilanKisi);
-
-        const odeyenSelect = document.getElementById('odeyenKisi');
-        kisilerDB.forEach(k => {
-            odeyenSelect.innerHTML += `<option value="${k}" ${k === varsayilanKisi ? 'selected' : ''}>${k}</option>`;
+        // 2. Sezonlar Dinleyici
+        db.ref('sezonlarDB').on('value', (snapshot) => {
+            sezonlar = snapshot.val() || [];
+            doldurSezonlar();
         });
 
-        // Araç Plaka Listesi
-        const araclarDB = JSON.parse(localStorage.getItem('araclarDB')) || ["81 AF 123"];
-        const plakaSelect = document.getElementById('aracPlaka');
-        plakaSelect.innerHTML = '<option value="">-- Araç Seçin --</option>';
-        araclarDB.forEach(a => { plakaSelect.innerHTML += `<option value="${a}">${a}</option>`; });
+        // 3. Kişiler Dinleyici
+        db.ref('kisilerDB').on('value', (snapshot) => {
+            kisiler = snapshot.val() || [];
+            doldurKisiler();
+        });
+
+        // 4. Araçlar Dinleyici
+        db.ref('araclarDB').on('value', (snapshot) => {
+            araclar = snapshot.val() || [];
+            doldurAraclar();
+        });
+
+        // 5. Kayıtlı Gübre İşlemleri Dinleyici
+        db.ref('islemler/gubre').on('value', (snapshot) => {
+            lokalDB = snapshot.val() || {};
+            listeyiCiz();
+        });
+
+        // --- DOLDURMA FONKSİYONLARI ---
+        function doldurSezonlar() {
+            const select = document.getElementById('sezonSecici');
+            const mevcutSecim = select.value;
+            select.innerHTML = "";
+            
+            const sortedSezonlar = [...sezonlar].sort().reverse();
+            sortedSezonlar.forEach(s => {
+                select.innerHTML += `<option value="${s}">${s}</option>`;
+            });
+
+            if (mevcutSecim && [...select.options].some(o => o.value === mevcutSecim)) {
+                select.value = mevcutSecim;
+            } else if (varsayilanlar.sezon) {
+                select.value = varsayilanlar.sezon;
+            }
+        }
+
+        function doldurKisiler() {
+            const select = document.getElementById('odeyenKisi');
+            const mevcutSecim = select.value;
+            select.innerHTML = '<option value="">-- Ödeyen Seçin --</option>';
+
+            kisiler.forEach(k => {
+                select.innerHTML += `<option value="${k}">${k}</option>`;
+            });
+
+            if (mevcutSecim && [...select.options].some(o => o.value === mevcutSecim)) {
+                select.value = mevcutSecim;
+            } else if (varsayilanlar.kisi) {
+                select.value = varsayilanlar.kisi;
+            }
+        }
+
+        function doldurAraclar() {
+            const select = document.getElementById('aracPlaka');
+            const mevcutSecim = select.value;
+            select.innerHTML = '<option value="">-- Araç Seçin --</option>';
+
+            araclar.forEach(a => {
+                select.innerHTML += `<option value="${a}">${a}</option>`;
+            });
+
+            if (mevcutSecim && [...select.options].some(o => o.value === mevcutSecim)) {
+                select.value = mevcutSecim;
+            } else if (varsayilanlar.arac) {
+                select.value = varsayilanlar.arac;
+            }
+        }
 
         function gubreHesapla() {
-            let adet = Number(document.getElementById('cuvalAdet').value) || 0;
-            let fiyat = Number(document.getElementById('cuvalFiyat').value) || 0;
-            if(adet > 0 && fiyat > 0) document.getElementById('gubreToplamMaliyet').value = (adet * fiyat).toFixed(2);
+            let m = Number(document.getElementById('gubreMiktar').value) || 0;
+            let f = Number(document.getElementById('gubreBirimFiyat').value) || 0;
+            if (m > 0 && f > 0) {
+                document.getElementById('gubreTutar').value = (m * f).toFixed(2);
+            }
         }
 
         function yolHesapla() {
-            let l = Number(document.getElementById('yolLitre').value) || 0;
-            let f = Number(document.getElementById('yolLitreFiyat').value) || 0;
-            if(l > 0 && f > 0) document.getElementById('yolMasrafi').value = (l * f).toFixed(2);
+            let km = Number(document.getElementById('yapilanKm').value) || 0;
+            let ort = Number(document.getElementById('ortTuketim').value) || 0;
+            let fiyat = Number(document.getElementById('yolLitreFiyat').value) || 0;
+            let litreInput = document.getElementById('yolLitre');
+
+            if (km > 0 && ort > 0) {
+                let hesaplananLitre = (km * ort) / 100;
+                litreInput.value = hesaplananLitre.toFixed(2);
+            }
+
+            let litre = Number(litreInput.value) || 0;
+
+            if (litre > 0 && fiyat > 0) {
+                document.getElementById('yolMasrafi').value = (litre * fiyat).toFixed(2);
+            }
+        }
+
+        function listeyiCiz() {
+            const listeDiv = document.getElementById('kayitListesi');
+            listeDiv.innerHTML = "";
+            const keys = Object.keys(lokalDB).reverse();
+            if (keys.length === 0) { listeDiv.innerHTML = "<p style='color:#718096;'>Kayıt yok.</p>"; return; }
+
+            keys.forEach(key => {
+                const item = lokalDB[key];
+                const cur = item.current || item;
+
+                let toplamTutar = (cur.gubreTutar || 0) + (cur.iscilikUcreti || 0) + (cur.yolMasrafi || 0);
+
+                let historyHTML = "";
+                if (item.history) {
+                    Object.values(item.history).reverse().forEach(log => {
+                        historyHTML += `<div class="log-item"><b>[${log.zaman}]</b> ${log.kullanici}: <br>${log.degisiklik}</div>`;
+                    });
+                } else { historyHTML = "<div class='log-item'>Geçmiş yok.</div>"; }
+
+                listeDiv.innerHTML += `
+                    <div class="record-card">
+                        <div class="record-header">
+                            <span>🌱 ${cur.malzemeAdi || 'Gübre/İlaç'} (${cur.sezon})</span>
+                            <span>💰 ${toplamTutar.toFixed(2)} TL</span>
+                        </div>
+                        <div><b>Tarih:</b> ${cur.tarih} | <b>Gübre/İlaç Tutarı:</b> ${cur.gubreTutar || 0} TL</div>
+                        <div><b>İşçilik:</b> ${cur.iscilikUcreti || 0} TL | <b>Yol Yakıtı:</b> ${cur.yolMasrafi || 0} TL (${cur.aracPlaka || 'Araçsız'})</div>
+                        <div><b>Ödeyen:</b> ${cur.odeyen}</div>
+                        <div style="margin-top:8px;">
+                            <button class="btn-sm btn-edit" onclick="duzenle('${key}')">✏️ Düzenle</button>
+                            <button class="btn-sm btn-history" onclick="gecmisAcKapa('${key}')">📜 Geçmişi Gör</button>
+                        </div>
+                        <div id="hist_${key}" class="history-box"><strong>🕒 Değişiklik Günlüğü:</strong>${historyHTML}</div>
+                    </div>`;
+            });
         }
 
         function kaydet() {
-            const veri = {
+            const editKey = document.getElementById('editKey').value;
+            const yeniVeri = {
                 modul: "Gübre",
                 sezon: document.getElementById('sezonSecici').value,
                 tarih: document.getElementById('tarih').value,
-                gubreTuru: document.getElementById('gubreTuru').value,
-                cuvalAdet: Number(document.getElementById('cuvalAdet').value),
-                cuvalFiyat: Number(document.getElementById('cuvalFiyat').value),
-                gubreToplamMaliyet: Number(document.getElementById('gubreToplamMaliyet').value),
-                nakliye: Number(document.getElementById('nakliye').value),
-                traktor: Number(document.getElementById('traktor').value),
-                yevmiyeUcreti: Number(document.getElementById('yevmiyeUcreti').value),
-                eldiven: Number(document.getElementById('eldiven').value),
-                yemek: Number(document.getElementById('yemek').value),
+                malzemeAdi: document.getElementById('malzemeAdi').value,
+                gubreMiktar: Number(document.getElementById('gubreMiktar').value),
+                gubreBirimFiyat: Number(document.getElementById('gubreBirimFiyat').value),
+                gubreTutar: Number(document.getElementById('gubreTutar').value),
+                iscilikUcreti: Number(document.getElementById('iscilikUcreti').value),
                 aracPlaka: document.getElementById('aracPlaka').value,
                 yapilanKm: Number(document.getElementById('yapilanKm').value),
+                ortTuketim: Number(document.getElementById('ortTuketim').value),
                 yolLitre: Number(document.getElementById('yolLitre').value),
                 yolLitreFiyat: Number(document.getElementById('yolLitreFiyat').value),
                 yolMasrafi: Number(document.getElementById('yolMasrafi').value),
@@ -141,12 +269,71 @@
                 odeyen: document.getElementById('odeyenKisi').value,
                 zamanDamgasi: new Date().getTime()
             };
-            let kayitlar = JSON.parse(localStorage.getItem('fihristDB')) || [];
-            kayitlar.push(veri);
-            localStorage.setItem('fihristDB', JSON.stringify(kayitlar));
-            alert("Gübreleme ve yol masrafları kaydedildi!");
-            window.location.reload();
+
+            const aktifKullanici = localStorage.getItem('currentUser') || "Sistem Kullanıcısı";
+
+            if (editKey) {
+                const eskiVeri = (lokalDB[editKey].current || lokalDB[editKey]);
+                let farklar = [];
+                for (let p in yeniVeri) {
+                    if (p !== 'zamanDamgasi' && eskiVeri[p] !== yeniVeri[p]) farklar.push(`${p}: (${eskiVeri[p] || 'boş'} ➔ ${yeniVeri[p] || 'boş'})`);
+                }
+                if (farklar.length > 0) {
+                    db.ref(`islemler/gubre/${editKey}/current`).set(yeniVeri);
+                    db.ref(`islemler/gubre/${editKey}/history`).push({
+                        zaman: new Date().toLocaleString('tr-TR'),
+                        kullanici: aktifKullanici,
+                        degisiklik: farklar.join(", ") + " güncellendi."
+                    });
+                    alert("Gübre/İlaç kaydı güncellendi!");
+                }
+            } else {
+                db.ref('islemler/gubre').push().set({ current: yeniVeri });
+                alert("Gübre/İlaç kaydı eklendi!");
+            }
+            formuSifirla();
         }
+
+        function duzenle(key) {
+            const data = lokalDB[key].current || lokalDB[key];
+            document.getElementById('editKey').value = key;
+            document.getElementById('sezonSecici').value = data.sezon;
+            document.getElementById('tarih').value = data.tarih;
+            document.getElementById('malzemeAdi').value = data.malzemeAdi || '';
+            document.getElementById('gubreMiktar').value = data.gubreMiktar || '';
+            document.getElementById('gubreBirimFiyat').value = data.gubreBirimFiyat || '';
+            document.getElementById('gubreTutar').value = data.gubreTutar || '';
+            document.getElementById('iscilikUcreti').value = data.iscilikUcreti || '';
+            document.getElementById('aracPlaka').value = data.aracPlaka || '';
+            document.getElementById('yapilanKm').value = data.yapilanKm || '';
+            document.getElementById('ortTuketim').value = data.ortTuketim || '';
+            document.getElementById('yolLitre').value = data.yolLitre || '';
+            document.getElementById('yolLitreFiyat').value = data.yolLitreFiyat || '';
+            document.getElementById('yolMasrafi').value = data.yolMasrafi || '';
+            document.getElementById('yolAciklama').value = data.yolAciklama || '';
+            document.getElementById('odeyenKisi').value = data.odeyen || '';
+
+            document.getElementById('btnKaydet').innerText = "Değişikliği Geçmişe İşle ve Kaydet";
+            document.getElementById('btnKaydet').style.background = "#dd6b20";
+            document.getElementById('btnIptal').style.display = "block";
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function formuSifirla() {
+            document.getElementById('editKey').value = "";
+            document.getElementById('btnKaydet').innerText = "Verileri Kaydet";
+            document.getElementById('btnKaydet').style.background = "#38a169";
+            document.getElementById('btnIptal').style.display = "none";
+            ['malzemeAdi', 'gubreMiktar', 'gubreBirimFiyat', 'gubreTutar', 'iscilikUcreti', 'yapilanKm', 'ortTuketim', 'yolLitre', 'yolLitreFiyat', 'yolMasrafi', 'yolAciklama'].forEach(id => document.getElementById(id).value = "");
+            document.getElementById('tarih').valueAsDate = new Date();
+
+            // Varsayılan değerleri yeniden yükle
+            if (varsayilanlar.sezon) document.getElementById('sezonSecici').value = varsayilanlar.sezon;
+            if (varsayilanlar.kisi) document.getElementById('odeyenKisi').value = varsayilanlar.kisi;
+            if (varsayilanlar.arac) document.getElementById('aracPlaka').value = varsayilanlar.arac;
+        }
+
+        function gecmisAcKapa(key) { const el = document.getElementById(`hist_${key}`); el.style.display = el.style.display === "block" ? "none" : "block"; }
     </script>
 </body>
 </html>
