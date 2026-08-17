@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Araç Bakım & Resmi Giderler</title>
+    <script>if (localStorage.getItem('isLoggedIn') !== 'true') window.location.replace('giris.html');</script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
+        body { font-family: 'Roboto', sans-serif; background-color: #f4f6f9; padding: 1rem; display: flex; flex-direction: column; align-items: center; }
+        .container { width: 100%; max-width: 500px; background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        h2 { color: #805ad5; margin-top: 0; border-bottom: 2px solid #805ad5; padding-bottom: 10px; }
+        .form-section { background: #f7fafc; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #805ad5; }
+        .form-group { margin-bottom: 12px; }
+        label { display: block; font-size: 0.85rem; font-weight: bold; margin-bottom: 5px; color: #4a5568;}
+        input, select { width: 100%; padding: 10px; border: 1px solid #cbd5e0; border-radius: 6px; box-sizing: border-box; font-size: 0.95rem; }
+        .row { display: flex; gap: 10px; } .row > div { flex: 1; }
+        .btn-save { background: #805ad5; color: white; width: 100%; padding: 14px; border: none; border-radius: 6px; font-weight: bold; font-size: 1rem; cursor: pointer; transition: background 0.2s;}
+        .btn-save:hover { background: #6b46c1; }
+        .btn-back { display: block; text-align: center; margin-top: 20px; color: #718096; text-decoration: none; font-weight: 500;}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>🚗 Araç Bakım & Resmi Giderler</h2>
+        
+        <div class="form-section">
+            <div class="row">
+                <div class="form-group"><label>Sezon (Yıl)</label><select id="sezonSecici"></select></div>
+                <div class="form-group"><label>Tarih</label><input type="date" id="tarih"></div>
+            </div>
+            <div class="form-group"><label>Araç Plakası</label><input type="text" id="plaka" placeholder="Örn: 81 AF 123"></div>
+            <div class="form-group"><label>Gider Kalemi / İşlem</label>
+                <select id="giderTuru">
+                    <option value="Bakım / Onarım">🔧 Periyodik Bakım / Tamir / Parça Değişimi</option>
+                    <option value="Trafik Sigortası">🛡️ Zorunlu Trafik Sigortası</option>
+                    <option value="Kasko">🚘 Kasko Poliçesi</option>
+                    <option value="TÜVTÜRK Muayene">🔍 TÜVTÜRK Araç Muayenesi</option>
+                    <option value="Bandrol / MTV">📜 Bandrol / Motorlu Taşıtlar Vergisi (MTV)</option>
+                    <option value="Diğer Resmi Masraf">📄 Diğer / Harç / Belge Masrafı</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="form-section" style="border-left-color: #3182ce;">
+            <label style="color: #2d3748; font-size: 1rem; margin-bottom: 10px;">💳 Ödeme ve Cari Detayları</label>
+            <div class="form-group"><label>Ödenen Tutar (TL)</label><input type="number" id="tutar" placeholder="0.00"></div>
+            <div class="form-group"><label>Kime Ödeme Yapıldı? (Usta / Kurum / Servis)</label><input type="text" id="kimeOdendi" placeholder="Örn: Oto Tamirci Ahmet Usta, TÜVTÜRK..."></div>
+            <div class="form-group"><label>Ödemeyi Yapan (Harcamayı Üstlenen Ortak)</label><select id="odeyenKisi"></select></div>
+            <div class="form-group"><label>Hangi Hesaptan / Yöntemle Ödendi?</label><input type="text" id="hangiHesap" placeholder="Örn: Murat Ziraat Şahsi Hesabı, Nakit..."></div>
+            <div class="form-group"><label>Açıklama / Notlar</label><input type="text" id="aciklama" placeholder="Örn: Yağ ve filtre değişimi, 1. Taksit vb."></div>
+        </div>
+
+        <button class="btn-save" onclick="kaydet()">Verileri Kaydet</button>
+        <a href="index.html" class="btn-back">← Ana Menüye Dön</a>
+    </div>
+
+    <script>
+        document.getElementById('tarih').valueAsDate = new Date();
+
+        // Sezon Hesaplama (Eylül ve sonrası ise sonraki yıl)
+        const simdikiTarih = new Date();
+        let varsayilanSezon = simdikiTarih.getFullYear();
+        if (simdikiTarih.getMonth() >= 8) { varsayilanSezon += 1; }
+        varsayilanSezon = String(varsayilanSezon);
+
+        let sezonlarDB = JSON.parse(localStorage.getItem('sezonlarDB')) || ["2026", "2027"];
+        if (!sezonlarDB.includes(varsayilanSezon)) sezonlarDB.push(varsayilanSezon);
+
+        const sezonSelect = document.getElementById('sezonSecici');
+        sezonSelect.innerHTML = "";
+        sezonlarDB.sort().reverse().forEach(s => {
+            sezonSelect.innerHTML += `<option value="${s}" ${s === varsayilanSezon ? 'selected' : ''}>${s}</option>`;
+        });
+
+        // Varsayılan Ödeyen: Murat Karaaslan
+        const varsayilanKisi = "Murat Karaaslan";
+        let kisilerDB = JSON.parse(localStorage.getItem('kisilerDB')) || [varsayilanKisi, "Kardeşim"];
+        if (!kisilerDB.includes(varsayilanKisi)) kisilerDB.unshift(varsayilanKisi);
+
+        const odeyenSelect = document.getElementById('odeyenKisi');
+        odeyenSelect.innerHTML = "";
+        kisilerDB.forEach(k => {
+            odeyenSelect.innerHTML += `<option value="${k}" ${k === varsayilanKisi ? 'selected' : ''}>${k}</option>`;
+        });
+
+        function kaydet() {
+            const tutarVal = Number(document.getElementById('tutar').value);
+            if (!tutarVal || tutarVal <= 0) {
+                alert("Lütfen geçerli bir tutar giriniz.");
+                return;
+            }
+
+            const veri = {
+                modul: "Araç",
+                sezon: document.getElementById('sezonSecici').value,
+                tarih: document.getElementById('tarih').value,
+                plaka: document.getElementById('plaka').value,
+                giderTuru: document.getElementById('giderTuru').value,
+                tutar: tutarVal,
+                kimeOdendi: document.getElementById('kimeOdendi').value,
+                odeyen: document.getElementById('odeyenKisi').value,
+                hangiHesap: document.getElementById('hangiHesap').value,
+                aciklama: document.getElementById('aciklama').value,
+                zamanDamgasi: new Date().getTime()
+            };
+
+            let kayitlar = JSON.parse(localStorage.getItem('fihristDB')) || [];
+            kayitlar.push(veri);
+            localStorage.setItem('fihristDB', JSON.stringify(kayitlar));
+            alert("Araç masrafı başarıyla kaydedildi!");
+            window.location.reload();
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cari ve Fatura Raporu</title>
+    <script>if (localStorage.getItem('isLoggedIn') !== 'true') window.location.replace('giris.html');</script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
+        body { font-family: 'Roboto', sans-serif; background-color: #f4f6f9; padding: 1rem; display: flex; flex-direction: column; align-items: center; }
+        .container { width: 100%; max-width: 600px; background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        h2 { color: #2d3748; margin-top: 0; border-bottom: 2px solid #a0aec0; padding-bottom: 10px; display: flex; justify-content: space-between; align-items: center;}
+        select { padding: 8px; border-radius: 4px; border: 1px solid #cbd5e0; font-weight: bold; }
+        .total-box { background: #3182ce; color: white; padding: 15px; border-radius: 8px; text-align: center; margin-bottom: 15px; }
+        .total-box .amount { font-size: 1.8rem; font-weight: bold; }
+        .section-title { font-size: 1.1rem; color: #2d3748; margin: 20px 0 10px 0; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; }
+        .card { background: #f7fafc; padding: 10px 15px; border-radius: 8px; margin-bottom: 10px; border: 1px solid #e2e8f0; font-size: 0.95rem; }
+        .row-flex { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px dashed #cbd5e0; }
+        .row-flex:last-child { border-bottom: none; }
+        .alert-box { background: #feebc8; border-left: 4px solid #dd6b20; padding: 15px; border-radius: 4px; color: #9c4221; margin-top: 15px; }
+        .btn-back { display: block; text-align: center; margin-top: 20px; color: #718096; text-decoration: none; font-weight: 500;}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>📊 Sezon Raporu <select id="sezonSecici" onchange="raporOlustur()"></select></h2>
+        
+        <div class="total-box">
+            <h3 style="margin: 0 0 5px 0; font-size: 1rem; font-weight: normal;">Sezonun Toplam Genel Maliyeti</h3>
+            <div class="amount" id="genelToplam">0.00 TL</div>
+        </div>
+
+        <div class="section-title">👥 Ortakların Ödemeleri ve Cari Durum</div>
+        <div class="card" id="kisiOdemeleriAlani">Veriler yükleniyor...</div>
+        <div class="alert-box" id="sonucAlani">Hesaplanıyor...</div>
+
+        <div class="section-title">🧾 Faturalar & Abonelikler (Aylık Dağılım)</div>
+        <div id="faturaKrilimAlani"></div>
+
+        <a href="index.html" class="btn-back">← Ana Menüye Dön</a>
+    </div>
+
+    <script>
+        const sezonlarDB = JSON.parse(localStorage.getItem('sezonlarDB')) || ["2026", "2027"];
+        const kisilerDB = JSON.parse(localStorage.getItem('kisilerDB')) || ["Ben", "Kardeşim"];
+        const sezonSelect = document.getElementById('sezonSecici');
+        sezonlarDB.sort().reverse().forEach(s => { sezonSelect.innerHTML += `<option value="${s}">${s} Sezonu</option>`; });
+
+        function maliyetHesapla(k) {
+    if(k.modul === "Tırpan") return (k.yevmiyeUcreti||0) + (k.benzinToplam||0) + (k.yagGideri||0) + (k.misinaGideri||0) + (k.eldiven||0) + (k.yemek||0) + (k.yolMasrafi||0);
+    if(k.modul === "Gübre") return (k.gubreToplamMaliyet||0) + (k.nakliye||0) + (k.traktor||0) + (k.yevmiyeUcreti||0) + (k.eldiven||0) + (k.yemek||0) + (k.yolMasrafi||0);
+    if(k.modul === "Bakım") return (k.testereBenzin||0) + (k.testereYag||0) + (k.testereBakim||0) + (k.ekstraGider||0) + (k.yemek||0) + (k.yolMasrafi||0);
+    if(k.modul === "Araç") return k.tutar || k.yolMaliyet || k.bakimTutar || k.resmiTutar || 0;
+    if(k.modul === "Fatura") return k.tutar || 0;
+    return 0;
+}
+
+        function ayIsmi(tarihStr) {
+            if(!tarihStr) return "Bilinmeyen Tarih";
+            const aylar = ["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"];
+            const d = new Date(tarihStr);
+            return aylar[d.getMonth()] + " " + d.getFullYear();
+        }
+
+        function raporOlustur() {
+            const secilen = document.getElementById('sezonSecici').value;
+            const kayitlar = JSON.parse(localStorage.getItem('fihristDB')) || [];
+            
+            let toplam = 0;
+            let kisiOdemeleri = {}; // Herkes için sıfırla
+            kisilerDB.forEach(k => kisiOdemeleri[k] = 0);
+            
+            let faturalarAylik = {}; // Ay bazında fatura kırılımı
+
+            kayitlar.filter(k => k.sezon == secilen).forEach(kayit => {
+                let tutar = maliyetHesapla(kayit);
+                toplam += tutar;
+                
+                // Ödeme yapanı bul ve ekle
+                if (kisiOdemeleri[kayit.odeyen] !== undefined) {
+                    kisiOdemeleri[kayit.odeyen] += tutar;
+                } else {
+                    kisiOdemeleri[kayit.odeyen] = tutar; // Ayarlardan silinmiş ama geçmişte ödemiş biri olabilir
+                }
+
+                // Fatura ise aya göre grupla
+                if (kayit.modul === "Fatura") {
+                    let ay = ayIsmi(kayit.tarih);
+                    if(!faturalarAylik[ay]) faturalarAylik[ay] = {};
+                    if(!faturalarAylik[ay][kayit.faturaTuru]) faturalarAylik[ay][kayit.faturaTuru] = 0;
+                    faturalarAylik[ay][kayit.faturaTuru] += tutar;
+                }
+            });
+
+            document.getElementById('genelToplam').innerText = toplam.toFixed(2) + " TL";
+
+            // CARİ DURUM
+            let ortakSayisi = kisilerDB.length;
+            let kisiBasiPay = toplam / (ortakSayisi > 0 ? ortakSayisi : 1);
+            
+            let kisiHtml = "";
+            let sonucHtml = `Toplam ${ortakSayisi} ortak var. Kişi başı düşen maliyet: <b>${kisiBasiPay.toFixed(2)} TL</b><br><br>`;
+            
+            for (let kisi in kisiOdemeleri) {
+                let odedigi = kisiOdemeleri[kisi];
+                kisiHtml += `<div class="row-flex"><span>${kisi}:</span> <b>${odedigi.toFixed(2)} TL</b></div>`;
+                
+                // Sisteme kayıtlı güncel bir ortak ise borç/alacak hesapla
+                if (kisilerDB.includes(kisi)) {
+                    let bakiye = odedigi - kisiBasiPay;
+                    if (bakiye > 0) sonucHtml += `✅ <b>${kisi}</b>: Ortak havuzdan ${bakiye.toFixed(2)} TL alacaklı.<br>`;
+                    else if (bakiye < 0) sonucHtml += `❌ <b>${kisi}</b>: Ortak havuza ${Math.abs(bakiye).toFixed(2)} TL borçlu.<br>`;
+                    else sonucHtml += `⚖️ <b>${kisi}</b>: Hesabı denk.<br>`;
+                }
+            }
+            document.getElementById('kisiOdemeleriAlani').innerHTML = kisiHtml;
+            document.getElementById('sonucAlani').innerHTML = sonucHtml;
+
+            // FATURA RAPORU HTML OLUŞTUR
+            let faturaHtml = "";
+            let aylar = Object.keys(faturalarAylik);
+            if(aylar.length === 0) {
+                faturaHtml = "<div class='card'>Bu sezona ait fatura kaydı bulunmamaktadır.</div>";
+            } else {
+                aylar.forEach(ay => {
+                    faturaHtml += `<div class="card"><div style="font-weight:bold; color:#3182ce; margin-bottom:5px;">📅 ${ay}</div>`;
+                    let ayToplam = 0;
+                    for (let tur in faturalarAylik[ay]) {
+                        let fTutar = faturalarAylik[ay][tur];
+                        ayToplam += fTutar;
+                        faturaHtml += `<div class="row-flex"><span>- ${tur}:</span> <span>${fTutar.toFixed(2)} TL</span></div>`;
+                    }
+                    faturaHtml += `<div class="row-flex" style="border-top:1px solid #cbd5e0; margin-top:5px; border-bottom:none;">
+                                   <strong>Aylık Fatura Toplamı:</strong> <strong>${ayToplam.toFixed(2)} TL</strong></div></div>`;
+                });
+            }
+            document.getElementById('faturaKrilimAlani').innerHTML = faturaHtml;
+        }
+
+        raporOlustur();
+    </script>
+</body>
+</html>

@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yönetici Paneli & Firebase Ayarları</title>
+    
+    <!-- Firebase SDK (Compat Sürümleri) -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+
+    <script>
+        const ADMIN_KULLANICI = "murat"; 
+
+        if (localStorage.getItem('isLoggedIn') !== 'true') {
+            window.location.replace('giris.html');
+        }
+        
+        if (localStorage.getItem('currentUser') !== ADMIN_KULLANICI) {
+            alert("Yetkisiz Erişim! Ayarlar sayfasına sadece sistem yöneticisi girebilir.");
+            window.location.replace('index.html');
+        }
+    </script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
+        body { font-family: 'Roboto', sans-serif; background-color: #f4f6f9; padding: 1.5rem 1rem; display: flex; flex-direction: column; align-items: center; }
+        .container { width: 100%; max-width: 650px; background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        h2 { border-bottom: 2px solid #805ad5; padding-bottom: 10px; color: #2d3748; margin-top: 0; display: flex; justify-content: space-between; align-items: center; font-size: 1.3rem;}
+        .section-box { background: #f7fafc; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #805ad5; }
+        .section-box.blue { border-left-color: #3182ce; }
+        .section-box.green { border-left-color: #38a169; }
+        .section-box.orange { border-left-color: #dd6b20; }
+        .form-group { margin-bottom: 12px; }
+        label { display: block; font-size: 0.85rem; font-weight: bold; margin-bottom: 5px; color: #4a5568;}
+        input, select { width: 100%; padding: 9px; border: 1px solid #cbd5e0; border-radius: 6px; box-sizing: border-box; font-size: 0.9rem; margin-bottom: 6px; }
+        .btn { background: #805ad5; color: white; width: 100%; padding: 10px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; transition: background 0.2s;}
+        .btn:hover { opacity: 0.9; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { text-align: left; padding: 8px; border-bottom: 1px solid #e2e8f0; font-size: 0.85rem; }
+        th { background-color: #edf2f7; color: #4a5568; }
+        .list-group { list-style: none; padding: 0; margin-top: 10px; }
+        .list-item { display: flex; justify-content: space-between; align-items: center; background: white; padding: 8px 12px; border: 1px solid #e2e8f0; margin-bottom: 5px; border-radius: 6px; font-size: 0.85rem; }
+        .btn-del { background: #e53e3e; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 0.75rem; }
+        .btn-edit { background: #3182ce; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 0.75rem; margin-right: 4px; }
+        .btn-back { display: block; text-align: center; margin-top: 20px; color: #718096; text-decoration: none; font-weight: 500;}
+        .loading { color: #e53e3e; font-size: 0.8rem; text-align: center; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>
+            ⚙️ Firebase Sistem Yönetimi
+            <span style="font-size: 0.85rem; font-weight: normal; color: #718096;" id="adminLabel"></span>
+        </h2>
+        
+        <div id="statusLabel" class="loading">Firebase Bağlantısı Yapılıyor...</div>
+
+        <!-- 1. KULLANICI YÖNETİMİ -->
+        <div class="section-box">
+            <h3 style="margin-top: 0; font-size: 1rem; color: #2d3748;" id="formTitle">👤 Yeni Kullanıcı Ekle</h3>
+            <div class="form-group"><label>Kullanıcı Adı (Küçük Harf):</label><input type="text" id="newUsername" placeholder="Örn: mert" autocomplete="off"></div>
+            <div class="form-group"><label>Giriş PIN Kodu:</label><input type="text" id="newPin" placeholder="Örn: 1234" autocomplete="off"></div>
+            <div class="form-group">
+                <label>Cihaz Kısıtlaması:</label>
+                <select id="deviceSelect">
+                    <option value="all">Tüm Cihazlar</option>
+                    <option value="mobile">Sadece Cep Telefonu</option>
+                    <option value="pc">Sadece Bilgisayar</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Konum Kısıtlaması:</label>
+                <select id="locationSelect">
+                    <option value="false">Konum Fark Etmez</option>
+                    <option value="true">Sadece Evdeyken Girebilir</option>
+                </select>
+            </div>
+            <button class="btn" id="saveBtn" onclick="kullaniciKaydet()">Kullanıcıyı Kaydet</button>
+            <button class="btn" id="cancelBtn" onclick="formuTemizle()" style="display:none; background: #a0aec0; margin-top: 5px;">İptal Et</button>
+
+            <h4 style="font-size: 0.95rem; color: #2d3748; margin: 15px 0 5px 0;">Mevcut Kullanıcılar</h4>
+            <table>
+                <thead>
+                    <tr><th>Kullanıcı</th><th>PIN</th><th>Cihaz</th><th>Ev Şartı</th><th>İşlem</th></tr>
+                </thead>
+                <tbody id="userTableBody"></tbody>
+            </table>
+        </div>
+
+        <!-- 2. ARAÇ / PLAKA YÖNETİMİ -->
+        <div class="section-box blue">
+            <label>🚘 Araç / Plaka Tanımla</label>
+            <input type="text" id="yeniPlaka" placeholder="Plaka Girin (Örn: 81 AF 123)">
+            <button class="btn" style="background:#3182ce;" onclick="aracEkle()">Araç Ekle</button>
+            <ul class="list-group" id="aracListesi"></ul>
+        </div>
+
+        <!-- 3. ABONE / SÖZLEŞME NO YÖNETİMİ -->
+        <div class="section-box blue">
+            <label>⚡ Fatura Abone / Sözleşme No Tanımla</label>
+            <select id="yeniAboneTur">
+                <option value="Elektrik">Elektrik</option>
+                <option value="Su">Su</option>
+                <option value="Doğalgaz">Doğalgaz</option>
+                <option value="İnternet / TV">İnternet / TV</option>
+                <option value="Diğer">Diğer</option>
+            </select>
+            <input type="text" id="yeniAboneNo" placeholder="Abone / Sözleşme No">
+            <input type="text" id="yeniAboneEtiket" placeholder="Açıklama (Örn: Tarla Sayacı)">
+            <button class="btn" style="background:#3182ce;" onclick="aboneEkle()">Abonelik Ekle</button>
+            <ul class="list-group" id="aboneListesi"></ul>
+        </div>
+
+        <!-- 4. KULLANICI / ÖDEYEN YÖNETİMİ -->
+        <div class="section-box green">
+            <label>💰 Ödemeyi Yapan Kişiler Listesi</label>
+            <input type="text" id="yeniKisi" placeholder="Kişi Adı (Örn: Murat Karaaslan)">
+            <button class="btn" style="background:#38a169;" onclick="kisiEkle()">Kişi Ekle</button>
+            <ul class="list-group" id="kisiListesi"></ul>
+        </div>
+
+        <!-- 5. SEZON YÖNETİMİ -->
+        <div class="section-box orange">
+            <label>📅 Sezon (Yıl) Yönetimi</label>
+            <input type="number" id="yeniSezon" placeholder="Yıl (Örn: 2026)">
+            <button class="btn" style="background:#dd6b20;" onclick="sezonEkle()">Sezon Ekle</button>
+            <ul class="list-group" id="sezonListesi"></ul>
+        </div>
+
+        <a href="index.html" class="btn-back">← Ana Menüye Dön</a>
+    </div>
+
+    <script>
+        document.getElementById('adminLabel').innerText = "Admin: " + ADMIN_KULLANICI.toUpperCase();
+
+        // -------------------------------------------------------------
+        // FIREBASE BİLGİLERİNİZİ BURAYA EKLENİN
+        // -------------------------------------------------------------
+       const firebaseConfig = {
+            apiKey: "AIzaSyApN7vhnM30cQ1RdAsXiUS8AY08G2QklYY",
+            authDomain: "findikhasattakip.firebaseapp.com",
+            databaseURL: "https://findikhasattakip-default-rtdb.firebaseio.com",
+            projectId: "findikhasattakip",
+            storageBucket: "findikhasattakip.firebasestorage.app",
+            messagingSenderId: "296913243470",
+            appId: "1:296913243470:web:f2a6cfed4196ff44e0221f",
+            measurementId: "G-XKSNG4LNL1"
+        };
+
+        // Firebase Başlatma
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        document.getElementById('statusLabel').innerText = "⚡ Firebase Canlı Bağlantı Aktif";
+        document.getElementById('statusLabel').style.color = "#38a169";
+
+        let localUsers = {};
+        let localAraclar = [];
+        let localAbonelikler = [];
+        let localKisiler = [];
+        let localSezonlar = [];
+
+        // --- FIREBASE CANLI DİNLEYİCİLERİ (REALTIME LISTENERS) ---
+        
+        // 1. Kullanıcılar
+        db.ref('usersDB').on('value', (snapshot) => {
+            localUsers = snapshot.val() || {};
+            kullaniciListesiniGuncelle();
+        });
+
+        // 2. Araçlar
+        db.ref('araclarDB').on('value', (snapshot) => {
+            localAraclar = snapshot.val() || [];
+            renderAraclar();
+        });
+
+        // 3. Abonelikler
+        db.ref('aboneliklerDB').on('value', (snapshot) => {
+            localAbonelikler = snapshot.val() || [];
+            renderAbonelikler();
+        });
+
+        // 4. Kişiler
+        db.ref('kisilerDB').on('value', (snapshot) => {
+            localKisiler = snapshot.val() || [];
+            renderKisiler();
+        });
+
+        // 5. Sezonlar
+        db.ref('sezonlarDB').on('value', (snapshot) => {
+            localSezonlar = snapshot.val() || [];
+            renderSezonlar();
+        });
+
+        // --- KULLANICI İŞLEMLERİ ---
+        function kullaniciListesiniGuncelle() {
+            const tbody = document.getElementById('userTableBody');
+            tbody.innerHTML = "";
+
+            for (const [username, details] of Object.entries(localUsers)) {
+                let deviceText = details.device === "all" ? "Tümü" : (details.device === "mobile" ? "Mobil" : "PC");
+                let locText = details.requireLocation ? "Evet" : "Hayır";
+                
+                let actionButtons = username === ADMIN_KULLANICI 
+                    ? `<button class="btn-edit" onclick="kullaniciDuzenle('${username}')">Düzenle</button>` 
+                    : `<button class="btn-edit" onclick="kullaniciDuzenle('${username}')">Düzenle</button>
+                       <button class="btn-del" onclick="kullaniciSil('${username}')">Sil</button>`;
+
+                tbody.innerHTML += `
+                    <tr>
+                        <td style="font-weight:bold;">${username}</td>
+                        <td>${details.pin}</td>
+                        <td>${deviceText}</td>
+                        <td>${locText}</td>
+                        <td>${actionButtons}</td>
+                    </tr>`;
+            }
+        }
+
+        function kullaniciKaydet() {
+            const user = document.getElementById('newUsername').value.toLowerCase().trim();
+            const pin = document.getElementById('newPin').value.trim();
+            if(!user || !pin) return alert("Lütfen kullanıcı adı ve PIN girin!");
+
+            db.ref('usersDB/' + user).set({
+                pin: pin,
+                device: document.getElementById('deviceSelect').value,
+                requireLocation: document.getElementById('locationSelect').value === "true"
+            });
+
+            formuTemizle();
+        }
+
+        function kullaniciSil(username) {
+            if(confirm(username + " adlı kullanıcıyı silmek istediğinize emin misiniz?")) {
+                db.ref('usersDB/' + username).remove();
+            }
+        }
+
+        function kullaniciDuzenle(username) {
+            const data = localUsers[username];
+            document.getElementById('newUsername').value = username;
+            document.getElementById('newUsername').disabled = true;
+            document.getElementById('newPin').value = data.pin;
+            document.getElementById('deviceSelect').value = data.device;
+            document.getElementById('locationSelect').value = data.requireLocation.toString();
+            
+            document.getElementById('formTitle').innerText = "Kullanıcıyı Düzenle: " + username;
+            document.getElementById('saveBtn').innerText = "Güncelle";
+            document.getElementById('cancelBtn').style.display = "block";
+        }
+
+        function formuTemizle() {
+            document.getElementById('newUsername').value = "";
+            document.getElementById('newUsername').disabled = false;
+            document.getElementById('newPin').value = "";
+            document.getElementById('deviceSelect').value = "all";
+            document.getElementById('locationSelect').value = "false";
+            document.getElementById('formTitle').innerText = "👤 Yeni Kullanıcı Ekle";
+            document.getElementById('saveBtn').innerText = "Kullanıcıyı Kaydet";
+            document.getElementById('cancelBtn').style.display = "none";
+        }
+
+        // --- DİĞER VERİ İŞLEMLERİ ---
+        function renderAraclar() {
+            document.getElementById('aracListesi').innerHTML = localAraclar.map((item, i) => `
+                <li class="list-item"><b>${item}</b><button class="btn-del" onclick="listeElemanSil('araclarDB', ${i})">Sil</button></li>`).join('');
+        }
+        function aracEkle() {
+            const v = document.getElementById('yeniPlaka').value.trim().toUpperCase();
+            if(v) { localAraclar.push(v); db.ref('araclarDB').set(localAraclar); document.getElementById('yeniPlaka').value = ""; }
+        }
+
+        function renderAbonelikler() {
+            document.getElementById('aboneListesi').innerHTML = localAbonelikler.map((item, i) => `
+                <li class="list-item"><div><b>[${item.tur}]</b> ${item.no} <small style="color:#718096">(${item.etiket||''})</small></div>
+                <button class="btn-del" onclick="listeElemanSil('aboneliklerDB', ${i})">Sil</button></li>`).join('');
+        }
+        function aboneEkle() {
+            const tur = document.getElementById('yeniAboneTur').value;
+            const no = document.getElementById('yeniAboneNo').value.trim();
+            const etiket = document.getElementById('yeniAboneEtiket').value.trim();
+            if(no) { localAbonelikler.push({ tur, no, etiket }); db.ref('aboneliklerDB').set(localAbonelikler); document.getElementById('yeniAboneNo').value = ""; document.getElementById('yeniAboneEtiket').value = ""; }
+        }
+
+        function renderKisiler() {
+            document.getElementById('kisiListesi').innerHTML = localKisiler.map((item, i) => `
+                <li class="list-item"><b>${item}</b><button class="btn-del" onclick="listeElemanSil('kisilerDB', ${i})">Sil</button></li>`).join('');
+        }
+        function kisiEkle() {
+            const v = document.getElementById('yeniKisi').value.trim();
+            if(v) { localKisiler.push(v); db.ref('kisilerDB').set(localKisiler); document.getElementById('yeniKisi').value = ""; }
+        }
+
+        function renderSezonlar() {
+            document.getElementById('sezonListesi').innerHTML = localSezonlar.map((item, i) => `
+                <li class="list-item"><b>${item}</b><button class="btn-del" onclick="listeElemanSil('sezonlarDB', ${i})">Sil</button></li>`).join('');
+        }
+        function sezonEkle() {
+            const v = document.getElementById('yeniSezon').value.trim();
+            if(v) { localSezonlar.push(v); db.ref('sezonlarDB').set(localSezonlar); document.getElementById('yeniSezon').value = ""; }
+        }
+
+        function listeElemanSil(dbPath, index) {
+            let refArray = [];
+            if(dbPath === 'araclarDB') refArray = localAraclar;
+            else if(dbPath === 'aboneliklerDB') refArray = localAbonelikler;
+            else if(dbPath === 'kisilerDB') refArray = localKisiler;
+            else if(dbPath === 'sezonlarDB') refArray = localSezonlar;
+
+            refArray.splice(index, 1);
+            db.ref(dbPath).set(refArray);
+        }
+    </script>
+</body>
+</html>

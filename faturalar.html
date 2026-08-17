@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fatura İşlemleri</title>
+    <script>if (localStorage.getItem('isLoggedIn') !== 'true') window.location.replace('giris.html');</script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
+        body { font-family: 'Roboto', sans-serif; background-color: #f4f6f9; padding: 1rem; display: flex; flex-direction: column; align-items: center; }
+        .container { width: 100%; max-width: 500px; background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        h2 { color: #3182ce; margin-top: 0; border-bottom: 2px solid #3182ce; padding-bottom: 10px; }
+        .form-section { background: #f7fafc; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #3182ce; }
+        .form-group { margin-bottom: 12px; }
+        label { display: block; font-size: 0.85rem; font-weight: bold; margin-bottom: 5px; color: #4a5568;}
+        input, select, textarea { width: 100%; padding: 10px; border: 1px solid #cbd5e0; border-radius: 6px; box-sizing: border-box; font-size: 0.95rem; }
+        .row { display: flex; gap: 10px; } .row > div { flex: 1; }
+        .btn-save { background: #3182ce; color: white; width: 100%; padding: 14px; border: none; border-radius: 6px; font-weight: bold; font-size: 1rem; cursor: pointer; transition: background 0.2s;}
+        .btn-save:hover { background: #2b6cb0; }
+        .btn-back { display: block; text-align: center; margin-top: 20px; color: #718096; text-decoration: none; font-weight: 500;}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>🧾 Fatura Ödemeleri</h2>
+        
+        <div class="form-section">
+            <div class="row">
+                <div class="form-group"><label>Sezon (Yıl)</label><select id="sezonSecici"></select></div>
+                <div class="form-group"><label>Fatura Tarihi</label><input type="date" id="tarih"></div>
+            </div>
+
+            <!-- Fatura Türü Seçimi -->
+            <div class="form-group">
+                <label>Fatura Türü</label>
+                <select id="faturaTuru" onchange="aboneSecenekleriniGuncelle()">
+                    <option value="Elektrik">⚡ Elektrik</option>
+                    <option value="Su">💧 Su</option>
+                    <option value="Doğalgaz">🔥 Doğalgaz</option>
+                    <option value="İnternet / TV">📡 İnternet / TV</option>
+                    <option value="Diğer">📑 Diğer</option>
+                </select>
+            </div>
+
+            <!-- Otomatik Doldurulan Abone / Sözleşme No -->
+            <div class="form-group">
+                <label>Abone / Sözleşme No</label>
+                <select id="aboneNoSelect"></select>
+            </div>
+
+            <div class="form-group">
+                <label>Ödenen Tutar (TL)</label>
+                <input type="number" id="tutar" placeholder="0.00" step="0.01">
+            </div>
+
+            <div class="form-group">
+                <label>Açıklama / Fatura Dönemi</label>
+                <input type="text" id="aciklama" placeholder="Örn: Ağustos ayı sayacı...">
+            </div>
+        </div>
+
+        <div class="form-section" style="border-left-color: #e53e3e;">
+            <div class="form-group"><label>💰 Ödemeyi Yapan Alacaklı</label><select id="odeyenKisi"></select></div>
+        </div>
+
+        <button class="btn-save" onclick="kaydet()">Verileri Kaydet</button>
+        <a href="index.html" class="btn-back">← Ana Menüye Dön</a>
+    </div>
+
+    <script>
+        document.getElementById('tarih').valueAsDate = new Date();
+
+        // Sezon Hesaplama
+        const simdikiTarih = new Date();
+        let varsayilanSezon = simdikiTarih.getFullYear();
+        if (simdikiTarih.getMonth() >= 8) { varsayilanSezon += 1; }
+        varsayilanSezon = String(varsayilanSezon);
+
+        let sezonlarDB = JSON.parse(localStorage.getItem('sezonlarDB')) || ["2026", "2027"];
+        if (!sezonlarDB.includes(varsayilanSezon)) sezonlarDB.push(varsayilanSezon);
+
+        const sezonSelect = document.getElementById('sezonSecici');
+        sezonlarDB.sort().reverse().forEach(s => {
+            sezonSelect.innerHTML += `<option value="${s}" ${s === varsayilanSezon ? 'selected' : ''}>${s}</option>`;
+        });
+
+        // Ödeyen Kişi Listesi
+        const varsayilanKisi = "Murat Karaaslan";
+        let kisilerDB = JSON.parse(localStorage.getItem('kisilerDB')) || [varsayilanKisi, "Kardeşim"];
+        if (!kisilerDB.includes(varsayilanKisi)) kisilerDB.unshift(varsayilanKisi);
+
+        const odeyenSelect = document.getElementById('odeyenKisi');
+        kisilerDB.forEach(k => {
+            odeyenSelect.innerHTML += `<option value="${k}" ${k === varsayilanKisi ? 'selected' : ''}>${k}</option>`;
+        });
+
+        // Seçilen Fatura Türüne Göre Abone/Sözleşme Noları Getir
+        function aboneSecenekleriniGuncelle() {
+            const secilenTur = document.getElementById('faturaTuru').value;
+            const abonelikler = JSON.parse(localStorage.getItem('aboneliklerDB')) || [
+                { tur: "Elektrik", no: "10023456", etiket: "Tarla Sayacı" }
+            ];
+            
+            const aboneSelect = document.getElementById('aboneNoSelect');
+            aboneSelect.innerHTML = "";
+
+            // Tür ile eşleşen aboneleri bul
+            const eslesenler = abonelikler.filter(a => a.tur === secilenTur);
+
+            if (eslesenler.length > 0) {
+                eslesenler.forEach(a => {
+                    const tanim = a.etiket ? `${a.no} (${a.etiket})` : a.no;
+                    aboneSelect.innerHTML += `<option value="${a.no}">${tanim}</option>`;
+                });
+            } else {
+                aboneSelect.innerHTML = `<option value="">Tanımlı No Bulunamadı (Ayarlardan Ekleyin)</option>`;
+            }
+        }
+
+        // Sayfa ilk yüklendiğinde aboneleri çek
+        aboneSecenekleriniGuncelle();
+
+        function kaydet() {
+            const veri = {
+                modul: "Fatura",
+                sezon: document.getElementById('sezonSecici').value,
+                tarih: document.getElementById('tarih').value,
+                faturaTuru: document.getElementById('faturaTuru').value,
+                aboneNo: document.getElementById('aboneNoSelect').value,
+                tutar: Number(document.getElementById('tutar').value),
+                aciklama: document.getElementById('aciklama').value,
+                odeyen: document.getElementById('odeyenKisi').value,
+                zamanDamgasi: new Date().getTime()
+            };
+
+            if (!veri.tutar) return alert("Lütfen ödenen tutarı giriniz.");
+
+            let kayitlar = JSON.parse(localStorage.getItem('fihristDB')) || [];
+            kayitlar.push(veri);
+            localStorage.setItem('fihristDB', JSON.stringify(kayitlar));
+            alert("Fatura ödemesi kaydedildi!");
+            window.location.reload();
+        }
+    </script>
+</body>
+</html>

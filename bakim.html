@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bakım İşlemleri</title>
+    <script>if (localStorage.getItem('isLoggedIn') !== 'true') window.location.replace('giris.html');</script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
+        body { font-family: 'Roboto', sans-serif; background-color: #f4f6f9; padding: 1rem; display: flex; flex-direction: column; align-items: center; }
+        .container { width: 100%; max-width: 500px; background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        h2 { color: #e53e3e; margin-top: 0; border-bottom: 2px solid #e53e3e; padding-bottom: 10px; }
+        .form-section { background: #f7fafc; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #e53e3e; }
+        .form-group { margin-bottom: 12px; }
+        label { display: block; font-size: 0.85rem; font-weight: bold; margin-bottom: 5px; color: #4a5568;}
+        input, select, textarea { width: 100%; padding: 10px; border: 1px solid #cbd5e0; border-radius: 6px; box-sizing: border-box; font-size: 0.95rem; }
+        .row { display: flex; gap: 10px; } .row > div { flex: 1; }
+        .btn-save { background: #e53e3e; color: white; width: 100%; padding: 14px; border: none; border-radius: 6px; font-weight: bold; font-size: 1rem; cursor: pointer; transition: background 0.2s;}
+        .btn-save:hover { background: #c53030; }
+        .btn-back { display: block; text-align: center; margin-top: 20px; color: #718096; text-decoration: none; font-weight: 500;}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>🪚 Ağaç & Fındık Bakımı</h2>
+        
+        <div class="form-section">
+            <div class="row">
+                <div class="form-group"><label>Sezon (Yıl)</label><select id="sezonSecici"></select></div>
+                <div class="form-group"><label>Tarih</label><input type="date" id="tarih"></div>
+            </div>
+            <div class="form-group"><label>Yapılan İşlem Özeti</label><input type="text" id="islem" placeholder="Örn: Dal kesimi, ocak temizliği..."></div>
+        </div>
+
+        <div class="form-section">
+            <label style="color: #2d3748; font-size: 1rem; margin-bottom: 10px;">🛠️ Motor & Giderler</label>
+            <div class="row">
+                <div class="form-group"><label>Testere Benzin (TL)</label><input type="number" id="testereBenzin" placeholder="0"></div>
+                <div class="form-group"><label>Testere Yağ (TL)</label><input type="number" id="testereYag" placeholder="0"></div>
+            </div>
+            <div class="form-group"><label>Testere Bakım Onarım (TL)</label><input type="number" id="testereBakim" placeholder="0"></div>
+            <div class="form-group"><label>Ekstra Malzeme/Gider (TL)</label><input type="number" id="ekstraGider" placeholder="0"></div>
+            <div class="form-group"><label>Ekstra Gider Açıklaması</label><textarea id="ekstraAciklama" rows="2" placeholder="Varsa açıklama..."></textarea></div>
+            <div class="form-group"><label>Yemek Masrafı (TL)</label><input type="number" id="yemek" placeholder="0"></div>
+        </div>
+
+        <!-- Yenilenmiş Yol Masrafı Alanı -->
+        <div class="form-section" style="border-left-color: #805ad5;">
+            <label style="color: #2d3748; font-size: 1rem; margin-bottom: 10px; display: block; font-weight: bold;">🚗 Tarlaya Gidiş - Geliş Yol Masrafı</label>
+            <div class="form-group"><label>Araç Plakası</label><select id="aracPlaka"></select></div>
+            <div class="row">
+                <div class="form-group"><label>Yapılan KM</label><input type="number" id="yapilanKm" placeholder="0"></div>
+                <div class="form-group"><label>Yakıt Litresi</label><input type="number" id="yolLitre" placeholder="0" step="0.1" oninput="yolHesapla()"></div>
+            </div>
+            <div class="row">
+                <div class="form-group"><label>Litre Fiyatı (TL)</label><input type="number" id="yolLitreFiyat" placeholder="0" step="0.1" oninput="yolHesapla()"></div>
+                <div class="form-group"><label>Otomatik Tutar (TL)</label><input type="number" id="yolMasrafi" placeholder="0.00"></div>
+            </div>
+            <div class="form-group"><label>Yol / Araç Açıklaması</label><input type="text" id="yolAciklama" placeholder="Örn: Budama için yol yakıtı..."></div>
+        </div>
+
+        <div class="form-section" style="border-left-color: #e53e3e;">
+            <div class="form-group"><label>💰 Ödemeyi Yapan Alacaklı</label><select id="odeyenKisi"></select></div>
+        </div>
+
+        <button class="btn-save" onclick="kaydet()">Verileri Kaydet</button>
+        <a href="index.html" class="btn-back">← Ana Menüye Dön</a>
+    </div>
+
+    <script>
+        document.getElementById('tarih').valueAsDate = new Date();
+
+        // Sezon Hesaplama
+        const simdikiTarih = new Date();
+        let varsayilanSezon = simdikiTarih.getFullYear();
+        if (simdikiTarih.getMonth() >= 8) { varsayilanSezon += 1; }
+        varsayilanSezon = String(varsayilanSezon);
+
+        let sezonlarDB = JSON.parse(localStorage.getItem('sezonlarDB')) || ["2026", "2027"];
+        if (!sezonlarDB.includes(varsayilanSezon)) sezonlarDB.push(varsayilanSezon);
+
+        const sezonSelect = document.getElementById('sezonSecici');
+        sezonlarDB.sort().reverse().forEach(s => {
+            sezonSelect.innerHTML += `<option value="${s}" ${s === varsayilanSezon ? 'selected' : ''}>${s}</option>`;
+        });
+
+        // Ödeyen Kişi
+        const varsayilanKisi = "Murat Karaaslan";
+        let kisilerDB = JSON.parse(localStorage.getItem('kisilerDB')) || [varsayilanKisi, "Kardeşim"];
+        if (!kisilerDB.includes(varsayilanKisi)) kisilerDB.unshift(varsayilanKisi);
+
+        const odeyenSelect = document.getElementById('odeyenKisi');
+        kisilerDB.forEach(k => {
+            odeyenSelect.innerHTML += `<option value="${k}" ${k === varsayilanKisi ? 'selected' : ''}>${k}</option>`;
+        });
+
+        // Araç Plaka Listesi
+        const araclarDB = JSON.parse(localStorage.getItem('araclarDB')) || ["81 AF 123"];
+        const plakaSelect = document.getElementById('aracPlaka');
+        plakaSelect.innerHTML = '<option value="">-- Araç Seçin --</option>';
+        araclarDB.forEach(a => { plakaSelect.innerHTML += `<option value="${a}">${a}</option>`; });
+
+        function yolHesapla() {
+            let l = Number(document.getElementById('yolLitre').value) || 0;
+            let f = Number(document.getElementById('yolLitreFiyat').value) || 0;
+            if(l > 0 && f > 0) document.getElementById('yolMasrafi').value = (l * f).toFixed(2);
+        }
+
+        function kaydet() {
+            const veri = {
+                modul: "Bakım",
+                sezon: document.getElementById('sezonSecici').value,
+                tarih: document.getElementById('tarih').value,
+                islem: document.getElementById('islem').value,
+                testereBenzin: Number(document.getElementById('testereBenzin').value),
+                testereYag: Number(document.getElementById('testereYag').value),
+                testereBakim: Number(document.getElementById('testereBakim').value),
+                ekstraGider: Number(document.getElementById('ekstraGider').value),
+                ekstraAciklama: document.getElementById('ekstraAciklama').value,
+                yemek: Number(document.getElementById('yemek').value),
+                aracPlaka: document.getElementById('aracPlaka').value,
+                yapilanKm: Number(document.getElementById('yapilanKm').value),
+                yolLitre: Number(document.getElementById('yolLitre').value),
+                yolLitreFiyat: Number(document.getElementById('yolLitreFiyat').value),
+                yolMasrafi: Number(document.getElementById('yolMasrafi').value),
+                yolAciklama: document.getElementById('yolAciklama').value,
+                odeyen: document.getElementById('odeyenKisi').value,
+                zamanDamgasi: new Date().getTime()
+            };
+            let kayitlar = JSON.parse(localStorage.getItem('fihristDB')) || [];
+            kayitlar.push(veri);
+            localStorage.setItem('fihristDB', JSON.stringify(kayitlar));
+            alert("Bakım ve yol masrafları kaydedildi!");
+            window.location.reload();
+        }
+    </script>
+</body>
+</html>
