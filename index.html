@@ -23,6 +23,7 @@
             --bakim-color: #e53e3e;
             --arac-color: #805ad5;
             --fatura-color: #3182ce;
+            --odeme-color: #2b6cb0;
             --rapor-color: #4a5568;
             --text-main: #2d3748;
             --text-muted: #718096;
@@ -44,6 +45,7 @@
         .link-bakim { border-left-color: var(--bakim-color); }
         .link-arac { border-left-color: var(--arac-color); }
         .link-fatura { border-left-color: var(--fatura-color); }
+        .link-odeme { border-left-color: var(--odeme-color); }
         .link-rapor { border-left-color: var(--rapor-color); }
         .link-log { border-left-color: #319795; }
 
@@ -119,6 +121,14 @@
             </div>
         </a>
 
+        <a href="odemeler.html" class="menu-link link-odeme">
+            <div class="icon-box">💳</div>
+            <div class="text-box">
+                <div class="title">Kişisel Ödemeler & Hakediş</div>
+                <div class="desc">Kişilere yapılan toplu ödemeler ve mahsuplaşma</div>
+            </div>
+        </a>
+
         <div class="section-title">Analiz & Yönetim</div>
 
         <a href="rapor.html" class="menu-link link-rapor">
@@ -169,13 +179,11 @@
         let userIp = "-";
         let userCity = "-";
 
-        // Admin (murat) panel kontrolünü veritabanından bağımsız anında çalıştır
-        if (currentUser === 'murat') {
+        if (currentUser === 'murat' || currentUser === 'admin') {
             const adminPanel = document.getElementById('adminPanelLink');
             if (adminPanel) adminPanel.style.display = 'block';
         }
 
-        // IP ve Şehir Bilgisini Çekme
         async function ipVeKonumGetir() {
             try {
                 const res = await fetch('https://ipapi.co/json/');
@@ -189,7 +197,6 @@
             }
         }
 
-        // Yetki Kontrolü ve Arayüz Güncelleme
         db.ref('usersDB/' + currentUser).once('value', (snapshot) => {
             const userData = snapshot.val();
             const displayEl = document.getElementById('currentUserDisplay');
@@ -203,7 +210,6 @@
             }
         });
 
-        // Araç Muayene Yaklaşan Bildirim Kontrolü
         db.ref('araclarDB').once('value', (snapshot) => {
             const araclar = snapshot.val();
             if (!araclar) return;
@@ -247,7 +253,6 @@
             window.location.href = 'giris.html';
         }
 
-        // --- ONLINE DURUM TAKİBİ & LOG FONKSİYONLARI ---
         function logEkle(islemAdi, detay = '') {
             if (!currentUser) return;
             db.ref('logsDB').push({
@@ -261,7 +266,6 @@
             });
         }
 
-        // Başlangıç İşlemleri: IP Al ve Durumu Güncelle
         async function baslat() {
             await ipVeKonumGetir();
 

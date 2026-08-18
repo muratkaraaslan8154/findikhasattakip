@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kişisel Ödemeler & Hakediş</title>
+    
+    <script>
+        if (localStorage.getItem('isLoggedIn') !== 'true') window.location.replace('giris.html');
+    </script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
+        body { font-family: 'Roboto', sans-serif; background-color: #f4f6f9; padding: 1rem; display: flex; flex-direction: column; align-items: center; margin:0; }
+        .container { width: 100%; max-width: 600px; background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        .header-title { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #2b6cb0; padding-bottom: 10px; margin-bottom: 15px; }
+        h2 { color: #2b6cb0; margin: 0; font-size: 1.3rem; }
+        .user-tag { color: #718096; font-size: 0.85rem; font-weight: normal; }
+        
+        .readonly-banner { background: #feebc8; color: #7b341e; text-align: center; padding: 12px; border-radius: 8px; font-weight: bold; font-size: 0.9rem; margin-bottom: 15px; display: none; }
+
+        .form-section { background: #ebf8ff; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #2b6cb0; }
+        .form-group { margin-bottom: 12px; }
+        label { display: block; font-size: 0.85rem; font-weight: bold; margin-bottom: 5px; color: #4a5568;}
+        input, select, textarea { width: 100%; padding: 10px; border: 1px solid #cbd5e0; border-radius: 6px; box-sizing: border-box; font-size: 0.95rem; }
+        
+        .btn-save { background: #2b6cb0; color: white; width: 100%; padding: 12px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 1rem; margin-top: 5px; }
+        .btn-cancel { background: #a0aec0; color: white; border: none; padding: 8px; width: 100%; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 0.9rem; margin-top: 8px; display: none;}
+        .btn-back { background: #edf2f7; color: #4a5568; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; margin-bottom: 15px; text-decoration: none; display: inline-block;}
+        
+        .history-card { background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; margin-bottom: 10px; }
+        .history-header { display: flex; justify-content: space-between; font-weight: bold; border-bottom: 1px dashed #cbd5e0; padding-bottom: 5px; margin-bottom: 8px; font-size: 0.9rem;}
+        .history-body { font-size: 0.85rem; color: #4a5568; display: grid; grid-template-columns: 1fr 1fr; gap: 5px;}
+        .actions-box { grid-column: span 2; display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px; border-top: 1px solid #edf2f7; padding-top: 6px; }
+        .btn-edit { background: #3182ce; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 0.75rem; }
+        .btn-del { background: #e53e3e; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 0.75rem; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <a href="index.html" class="btn-back">⬅️ Ana Menüye Dön</a>
+        
+        <div class="header-title">
+            <h2>💳 Kişisel Ödemeler (Hakediş Cap)</h2>
+            <span class="user-tag" id="userDisplay">Kullanıcı: Yükleniyor...</span>
+        </div>
+
+        <div id="readOnlyBanner" class="readonly-banner">
+            👁️ Salt Okunur Mod: Bu sayfadaki verileri görüntüleyebilirsiniz ancak yeni ödeme ekleyemez veya silemezsiniz.
+        </div>
+
+        <input type="hidden" id="editKey" value="">
+
+        <div class="form-section">
+            <div class="form-group">
+                <label>Görüntülenecek / İşlem Yapılacak Sezon:</label>
+                <select id="sezonSecici" onchange="verileriYukle()"></select>
+            </div>
+        </div>
+
+        <div id="formContainer">
+            <div class="form-section">
+                <div class="form-group">
+                    <label>Ödeme Yapılan Kişi (Alacaklı):</label>
+                    <select id="kisiSelect"></select>
+                </div>
+
+                <div class="form-group">
+                    <label>Ödenen Tutar (TL):</label>
+                    <input type="number" id="odemeTutar" placeholder="Örn: 100000">
+                </div>
+
+                <div class="form-group">
+                    <label>Ödeme Tarihi:</label>
+                    <input type="date" id="odemeTarih">
+                </div>
+
+                <div class="form-group">
+                    <label>Açıklama / Dekont Notu:</label>
+                    <textarea id="odemeAciklama" rows="2" placeholder="Örn: Banka havalesi ile 100.000 TL toplu ödeme yapıldı..."></textarea>
+                </div>
+
+                <button class="btn-save" id="btnKaydet" onclick="odemeKaydet()">Ödemeyi Kaydet</button>
+                <button class="btn-cancel" id="btnIptal" onclick="formuSifirla()">İptal Et</button>
+            </div>
+        </div>
+
+        <h3 style="color:#2d3748; margin-top: 20px; font-size:1.1rem; border-bottom:2px solid #edf2f7; padding-bottom:5px;">📋 Yapılan Ödeme Kayıtları</h3>
+        <div id="gecmisListesi">Yükleniyor...</div>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyApN7vhnM30cQ1RdAsXiUS8AY08G2QklYY",
+            authDomain: "findikhasattakip.firebaseapp.com",
+            databaseURL: "https://findikhasattakip-default-rtdb.firebaseio.com",
+            projectId: "findikhasattakip",
+            storageBucket: "findikhasattakip.firebasestorage.app",
+            messagingSenderId: "296913243470",
+            appId: "1:296913243470:web:f2a6cfed4196ff44e0221f"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        const currentUser = localStorage.getItem('currentUser') || 'murat';
+        document.getElementById('userDisplay').innerText = `Kullanıcı: ${currentUser}`;
+
+        if (currentUser !== 'Anonim') {
+            const connectedRef = db.ref('.info/connected');
+            const userPresenceRef = db.ref('onlineUsersDB/' + currentUser);
+
+            connectedRef.on('value', (snap) => {
+                if (snap.val() === true) {
+                    userPresenceRef.onDisconnect().set({
+                        status: 'offline',
+                        lastSeen: new Date().toLocaleString('tr-TR')
+                    });
+
+                    userPresenceRef.set({
+                        status: 'online',
+                        lastSeen: new Date().toLocaleString('tr-TR'),
+                        device: /Android|iPhone|iPad/i.test(navigator.userAgent) ? '📱 Mobil' : '💻 Bilgisayar'
+                    });
+                }
+            });
+        }
+
+        function logEkle(islemAdi, detay = '') {
+            db.ref('logsDB').push({
+                kullanici: currentUser,
+                islem: islemAdi,
+                detay: detay,
+                tarih: new Date().toLocaleString('tr-TR'),
+                timestamp: firebase.database.ServerValue.TIMESTAMP
+            });
+        }
+
+        logEkle("Sayfa Ziyareti", "Ödemeler Sayfası");
+
+        document.getElementById('odemeTarih').valueAsDate = new Date();
+
+        let userPermission = "tam";
+        let varsayilanlar = {};
+        let tumOdemeler = {};
+
+        if (currentUser) {
+            db.ref('usersDB/' + currentUser).on('value', (snapshot) => {
+                const userData = snapshot.val();
+                if (userData && userData.permissions) {
+                    userPermission = userData.permissions.odemeler || "tam";
+                    yetkiUygula();
+                }
+            });
+        }
+
+        function yetkiUygula() {
+            if (userPermission === "oku") {
+                document.getElementById('formContainer').style.display = "none";
+                document.getElementById('readOnlyBanner').style.display = "block";
+            } else {
+                document.getElementById('formContainer').style.display = "block";
+                document.getElementById('readOnlyBanner').style.display = "none";
+            }
+            verileriYukle();
+        }
+
+        db.ref('varsayilanlarDB').on('value', (snapshot) => {
+            varsayilanlar = snapshot.val() || {};
+        });
+
+        db.ref('sezonlarDB').on('value', (snap) => {
+            const list = snap.val() || ["2026"];
+            const select = document.getElementById('sezonSecici');
+            select.innerHTML = "";
+            const arr = Array.isArray(list) ? list : Object.values(list);
+            arr.forEach(s => select.innerHTML += `<option value="${s}">${s} Sezonu</option>`);
+            if (varsayilanlar.sezon) select.value = varsayilanlar.sezon;
+            verileriYukle();
+        });
+
+        db.ref('kisilerDB').on('value', (snap) => {
+            const list = snap.val() || [];
+            const select = document.getElementById('kisiSelect');
+            select.innerHTML = '<option value="">Kişi Seçin...</option>';
+            const arr = Array.isArray(list) ? list : Object.values(list);
+            arr.forEach(k => select.innerHTML += `<option value="${k}">${k}</option>`);
+            if (varsayilanlar.kisi) select.value = varsayilanlar.kisi;
+        });
+
+        function odemeKaydet() {
+            if (userPermission === "oku") return alert("Salt okunur moddasınız!");
+
+            const tutar = parseFloat(document.getElementById('odemeTutar').value) || 0;
+            const kisi = document.getElementById('kisiSelect').value;
+            const tarih = document.getElementById('odemeTarih').value;
+            const editKey = document.getElementById('editKey').value;
+
+            if (!kisi) return alert("Lütfen ödeme yapılan kişiyi seçiniz!");
+            if (!tarih) return alert("Lütfen ödeme tarihini seçiniz!");
+            if (tutar <= 0) return alert("Lütfen geçerli bir tutar girin!");
+
+            const kayitData = {
+                kisi: kisi,
+                sezon: document.getElementById('sezonSecici').value,
+                tutar: tutar,
+                tarih: tarih,
+                aciklama: document.getElementById('odemeAciklama').value.trim(),
+                ekleyen: currentUser
+            };
+
+            if (editKey) {
+                db.ref('odemelerDB/' + editKey).set(kayitData, (error) => {
+                    if (!error) {
+                        alert("Ödeme kaydı başarıyla güncellendi.");
+                        logEkle("Ödeme Güncellendi", `${kisi} - ${tutar.toFixed(2)} TL`);
+                        formuSifirla();
+                    }
+                });
+            } else {
+                db.ref('odemelerDB').push(kayitData, (error) => {
+                    if (!error) {
+                        alert("Ödeme başarıyla kaydedildi.");
+                        logEkle("Ödeme Eklendi", `${kisi} - ${tutar.toFixed(2)} TL`);
+                        formuSifirla();
+                    }
+                });
+            }
+        }
+
+        function verileriYukle() {
+            const secilenSezon = document.getElementById('sezonSecici').value;
+            const container = document.getElementById('gecmisListesi');
+
+            db.ref('odemelerDB').orderByChild('sezon').equalTo(secilenSezon).on('value', (snapshot) => {
+                tumOdemeler = snapshot.val() || {};
+                container.innerHTML = "";
+
+                if (Object.keys(tumOdemeler).length === 0) {
+                    container.innerHTML = "<p style='color:#718096; font-size:0.9rem;'>Bu sezona ait yapılan ödeme kaydı bulunmuyor.</p>";
+                    return;
+                }
+
+                const keys = Object.keys(tumOdemeler).reverse();
+                const temizUser = currentUser ? currentUser.trim().toLowerCase() : "";
+
+                keys.forEach(key => {
+                    const item = tumOdemeler[key];
+                    const temizEkleyen = item.ekleyen ? item.ekleyen.trim().toLowerCase() : "";
+
+                    const isAuthorized = temizUser === 'admin' || temizUser === 'murat' || temizEkleyen === temizUser || temizEkleyen === "";
+
+                    let actionsHtml = "";
+                    if (userPermission !== "oku" && isAuthorized) {
+                        actionsHtml = `
+                            <div class="actions-box">
+                                <button class="btn-edit" onclick="kayitDuzenle('${key}')">✏️ Düzenle</button>
+                                <button class="btn-del" onclick="odemeSil('${key}')">🗑️ Sil</button>
+                            </div>
+                        `;
+                    }
+
+                    container.innerHTML += `
+                        <div class="history-card">
+                            <div class="history-header">
+                                <span>📅 ${item.tarih}</span>
+                                <span style="color:#2b6cb0;">💳 ${item.tutar ? item.tutar.toFixed(2) : 0} TL</span>
+                            </div>
+                            <div class="history-body">
+                                <div><b>Ödeme Yapılan:</b> ${item.kisi || '-'}</div>
+                                <div><b>Kaydeden:</b> ${item.ekleyen || '-'}</div>
+                                <div style="grid-column: span 2;"><b>Açıklama:</b> ${item.aciklama || '-'}</div>
+                            </div>
+                            ${actionsHtml}
+                        </div>
+                    `;
+                });
+            });
+        }
+
+        function odemeSil(key) {
+            if (userPermission === "oku") return alert("Salt okunur moddasınız!");
+            
+            const silinen = tumOdemeler[key];
+            const temizUser = currentUser ? currentUser.trim().toLowerCase() : "";
+            const temizEkleyen = silinen && silinen.ekleyen ? silinen.ekleyen.trim().toLowerCase() : "";
+
+            if (temizUser !== 'admin' && temizUser !== 'murat' && temizEkleyen !== temizUser && temizEkleyen !== "") {
+                return alert("Bu kaydı yalnızca yönetici veya ekleyen kişi silebilir!");
+            }
+
+            if (confirm("Bu ödeme kaydını silmek istediğinize emin misiniz?")) {
+                db.ref('odemelerDB/' + key).remove(() => {
+                    logEkle("Ödeme Kaydı Silindi", silinen ? `${silinen.kisi} - ${silinen.tutar || 0} TL` : `ID: ${key}`);
+                });
+            }
+        }
+
+        function kayitDuzenle(key) {
+            if (userPermission === "oku") return;
+
+            const data = tumOdemeler[key];
+            if (!data) return;
+
+            document.getElementById('editKey').value = key;
+            document.getElementById('kisiSelect').value = data.kisi || '';
+            document.getElementById('odemeTutar').value = data.tutar || '';
+            document.getElementById('odemeTarih').value = data.tarih || '';
+            document.getElementById('odemeAciklama').value = data.aciklama || '';
+
+            document.getElementById('btnKaydet').innerText = "Değişikliği Kaydet";
+            document.getElementById('btnKaydet').style.background = "#dd6b20";
+            document.getElementById('btnIptal').style.display = "block";
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function formuSifirla() {
+            document.getElementById('editKey').value = "";
+            document.getElementById('btnKaydet').innerText = "Ödemeyi Kaydet";
+            document.getElementById('btnKaydet').style.background = "#2b6cb0";
+            document.getElementById('btnIptal').style.display = "none";
+            ['odemeTutar', 'odemeAciklama'].forEach(id => document.getElementById(id).value = "");
+            document.getElementById('odemeTarih').valueAsDate = new Date();
+
+            if (varsayilanlar.sezon) document.getElementById('sezonSecici').value = varsayilanlar.sezon;
+            if (varsayilanlar.kisi) document.getElementById('kisiSelect').value = varsayilanlar.kisi;
+        }
+    </script>
+</body>
+</html>

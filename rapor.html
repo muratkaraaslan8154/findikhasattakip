@@ -33,6 +33,7 @@
         .stat-card.blue { border-left-color: #3182ce; }
         .stat-card.orange { border-left-color: #dd6b20; }
         .stat-card.purple { border-left-color: #805ad5; }
+        .stat-card.red { border-left-color: #e53e3e; }
         .stat-label { font-size: 0.75rem; font-weight: bold; color: #a0aec0; text-transform: uppercase; }
         .stat-value { font-size: 1.4rem; font-weight: bold; color: #2d3748; margin-top: 5px; }
 
@@ -50,6 +51,11 @@
         .badge-fatura { background: #e53e3e; }
         .badge-arac { background: #805ad5; }
         .badge-bakim { background: #dd6b20; }
+        .badge-odeme { background: #2b6cb0; }
+
+        .badge-odendi { background: #38a169; color: white; }
+        .badge-kismi { background: #dd6b20; color: white; }
+        .badge-odenmedi { background: #e53e3e; color: white; }
 
         .btn-go { background: #4a5568; color: white; text-decoration: none; padding: 4px 10px; border-radius: 4px; font-weight: bold; font-size: 0.75rem; display: inline-block; border: none; }
         .btn-go:hover:not(:disabled) { background: #2d3748; }
@@ -91,6 +97,7 @@
                         <option value="Faturalar">Faturalar</option>
                         <option value="Araç">Araç</option>
                         <option value="Bakım">Bakım</option>
+                        <option value="Ödemeler">Ödemeler (Hakediş)</option>
                     </select>
                 </div>
                 <div class="filter-group">
@@ -115,16 +122,16 @@
                 <div class="stat-value" id="statToplam">0.00 TL</div>
             </div>
             <div class="stat-card blue">
-                <div class="stat-label">TOPLAM KAYIT SAYISI</div>
-                <div class="stat-value" id="statAdet">0</div>
+                <div class="stat-label">YAPILAN TOPLAM ÖDEME</div>
+                <div class="stat-value" id="statOdenen">0.00 TL</div>
             </div>
-            <div class="stat-card orange">
-                <div class="stat-label">EN YÜKSEK HARCAMA KALEMİ</div>
-                <div class="stat-value" id="statEnYuksekKalem">-</div>
+            <div class="stat-card red">
+                <div class="stat-label">KALAN NET BORÇ / BAKİYE</div>
+                <div class="stat-value" id="statKalanBakiye">0.00 TL</div>
             </div>
             <div class="stat-card purple">
-                <div class="stat-label">EN ÇOK ÖDEME YAPAN</div>
-                <div class="stat-value" id="statEnCokOdeyen">-</div>
+                <div class="stat-label">TOPLAM KAYIT SAYISI</div>
+                <div class="stat-value" id="statAdet">0</div>
             </div>
         </div>
 
@@ -138,16 +145,16 @@
             </div>
 
             <div class="table-card">
-                <h3>👥 Kişi Bazlı Ödeme / Alacak Dağılımı</h3>
+                <h3>👥 Kişi Bazlı Hakediş ve Ödeme Durumu</h3>
                 <table>
-                    <thead><tr><th>Kişi</th><th>Ödediği Tutar</th><th>Oran</th></tr></thead>
+                    <thead><tr><th>Kişi</th><th>Harcaması</th><th>Ödenen</th><th>Kalan</th></tr></thead>
                     <tbody id="tblKisiDagilim"></tbody>
                 </table>
             </div>
         </div>
 
         <div class="table-card">
-            <h3>📑 Detaylı Harcama Kalemleri</h3>
+            <h3>📑 Detaylı Harcama ve Ödeme Mahsup Kalemleri (Eskiden Yeniye)</h3>
             <table>
                 <thead>
                     <tr>
@@ -155,8 +162,11 @@
                         <th>Sezon</th>
                         <th>Modül</th>
                         <th>Açıklama / Detay</th>
-                        <th>Ödeyen Kişi</th>
-                        <th style="text-align:right;">Tutar (TL)</th>
+                        <th>Kişi</th>
+                        <th style="text-align:right;">Tutar</th>
+                        <th style="text-align:right;">Ödenen</th>
+                        <th style="text-align:right;">Kalan</th>
+                        <th style="text-align:center;">Ödeme Durumu</th>
                         <th style="text-align:center;">İşlem</th>
                     </tr>
                 </thead>
@@ -255,17 +265,16 @@
                 { path: 'gubreMasraflariDB', modul: 'Gübre', link: 'gubre.html' },
                 { path: 'faturaMasraflariDB', modul: 'Faturalar', link: 'faturalar.html' },
                 { path: 'aracMasraflariDB', modul: 'Araç', link: 'arac.html' },
-                { path: 'bakimMasraflariDB', modul: 'Bakım', link: 'bakim.html' }
+                { path: 'bakimMasraflariDB', modul: 'Bakım', link: 'bakim.html' },
+                { path: 'odemelerDB', modul: 'Ödemeler', link: 'odemeler.html' }
             ];
 
-            let yuklenenSayisi = 0;
             tumVeriler = [];
 
             veritabanlari.forEach(v => {
                 db.ref(v.path).on('value', snapshot => {
                     const data = snapshot.val() || {};
                     
-                    // Önceki aynı modül verilerini temizle
                     tumVeriler = tumVeriler.filter(item => item.modul !== v.modul);
 
                     Object.keys(data).forEach(k => {
@@ -276,9 +285,9 @@
                         tumVeriler.push({
                             modul: v.modul,
                             sezon: c.sezon,
-                            tarih: c.tarih,
+                            tarih: c.tarih || '1970-01-01',
                             aciklama: aciklama,
-                            odeyen: c.odeyen || c.kisi,
+                            odeyen: c.odeyen || c.kisi || 'Bilinmeyen',
                             tutar: parseFloat(tutar) || 0,
                             link: v.link
                         });
@@ -305,58 +314,98 @@
                 return true;
             });
 
-            süzülen.sort((a,b) => new Date(b.tarih) - new Date(a.tarih));
+            // Kişi bazlı toplam ödemeleri ve masrafları hesaplama
+            let kisiToplamOdemeler = {};
+            tumVeriler.filter(i => i.modul === 'Ödemeler').forEach(i => {
+                if (fSezon !== "Tüm" && i.sezon != fSezon) return;
+                kisiToplamOdemeler[i.odeyen] = (kisiToplamOdemeler[i.odeyen] || 0) + i.tutar;
+            });
 
-            let genelToplam = 0;
-            let modulToplamlar = {};
-            let kisiToplamlar = {};
+            // ESKİDEN YENİYE SIRA İLE (FIFO Mahsuplaşma Algoritması)
+            let harcamalar = süzülen.filter(i => i.modul !== 'Ödemeler');
+            harcamalar.sort((a,b) => new Date(a.tarih) - new Date(b.tarih));
 
-            süzülen.forEach(i => {
-                genelToplam += i.tutar;
-                modulToplamlar[i.modul] = (modulToplamlar[i.modul] || 0) + i.tutar;
-                if (i.odeyen) {
-                    kisiToplamlar[i.odeyen] = (kisiToplamlar[i.odeyen] || 0) + i.tutar;
+            let kisiGuncelKalanOdeme = { ...kisiToplamOdemeler };
+
+            harcamalar.forEach(item => {
+                let kisi = item.odeyen;
+                let mevcutOdeme = kisiGuncelKalanOdeme[kisi] || 0;
+
+                if (mevcutOdeme >= item.tutar) {
+                    item.odenen = item.tutar;
+                    item.kalan = 0;
+                    item.durum = "Ödendi";
+                    kisiGuncelKalanOdeme[kisi] -= item.tutar;
+                } else if (mevcutOdeme > 0) {
+                    item.odenen = mevcutOdeme;
+                    item.kalan = item.tutar - mevcutOdeme;
+                    item.durum = "Kısmi Ödeme";
+                    kisiGuncelKalanOdeme[kisi] = 0;
+                } else {
+                    item.odenen = 0;
+                    item.kalan = item.tutar;
+                    item.durum = "Ödenmedi";
                 }
             });
 
-            document.getElementById('statToplam').innerText = genelToplam.toFixed(2) + " TL";
+            // Rapor Görünümü için Tekrar Yeniden Eskiye Sırala
+            süzülen.sort((a,b) => new Date(b.tarih) - new Date(a.tarih));
+
+            let genelHarcama = 0;
+            let genelOdeme = 0;
+            let modulToplamlar = {};
+            let kisiHarcamalar = {};
+
+            süzülen.forEach(i => {
+                if (i.modul === 'Ödemeler') {
+                    genelOdeme += i.tutar;
+                } else {
+                    genelHarcama += i.tutar;
+                    modulToplamlar[i.modul] = (modulToplamlar[i.modul] || 0) + i.tutar;
+                    kisiHarcamalar[i.odeyen] = (kisiHarcamalar[i.odeyen] || 0) + i.tutar;
+                }
+            });
+
+            let kalanNetBakiye = genelHarcama - genelOdeme;
+
+            document.getElementById('statToplam').innerText = genelHarcama.toFixed(2) + " TL";
+            document.getElementById('statOdenen').innerText = genelOdeme.toFixed(2) + " TL";
+            document.getElementById('statKalanBakiye').innerText = kalanNetBakiye.toFixed(2) + " TL";
             document.getElementById('statAdet').innerText = süzülen.length;
-
-            let maxModul = "-", maxModulTutar = 0;
-            for (let m in modulToplamlar) {
-                if (modulToplamlar[m] > maxModulTutar) { maxModulTutar = modulToplamlar[m]; maxModul = m; }
-            }
-            document.getElementById('statEnYuksekKalem').innerText = maxModulTutar > 0 ? `${maxModul} (${maxModulTutar.toFixed(0)} TL)` : "-";
-
-            let maxKisi = "-", maxKisiTutar = 0;
-            for (let k in kisiToplamlar) {
-                if (kisiToplamlar[k] > maxKisiTutar) { maxKisiTutar = kisiToplamlar[k]; maxKisi = k; }
-            }
-            document.getElementById('statEnCokOdeyen').innerText = maxKisiTutar > 0 ? `${maxKisi} (${maxKisiTutar.toFixed(0)} TL)` : "-";
 
             // Modül Tablosu
             const tblModul = document.getElementById('tblModulDagilim');
             tblModul.innerHTML = "";
             for (let m in modulToplamlar) {
                 let tutar = modulToplamlar[m];
-                let oran = genelToplam > 0 ? ((tutar / genelToplam) * 100).toFixed(1) : "0.0";
+                let oran = genelHarcama > 0 ? ((tutar / genelHarcama) * 100).toFixed(1) : "0.0";
                 tblModul.innerHTML += `<tr><td><b>${m}</b></td><td>${tutar.toFixed(2)} TL</td><td>%${oran}</td></tr>`;
             }
 
-            // Kişi Tablosu
+            // Kişi Tablosu (Hakediş vs Ödeme)
             const tblKisi = document.getElementById('tblKisiDagilim');
             tblKisi.innerHTML = "";
-            for (let k in kisiToplamlar) {
-                let tutar = kisiToplamlar[k];
-                let oran = genelToplam > 0 ? ((tutar / genelToplam) * 100).toFixed(1) : "0.0";
-                tblKisi.innerHTML += `<tr><td><b>${k}</b></td><td>${tutar.toFixed(2)} TL</td><td>%${oran}</td></tr>`;
-            }
+            let tumKisiler = Array.from(new Set([...Object.keys(kisiHarcamalar), ...Object.keys(kisiToplamOdemeler)]));
+            
+            tumKisiler.forEach(k => {
+                let harcama = kisiHarcamalar[k] || 0;
+                let odeme = kisiToplamOdemeler[k] || 0;
+                let kalan = harcama - odeme;
+                tblKisi.innerHTML += `
+                    <tr>
+                        <td><b>${k}</b></td>
+                        <td>${harcama.toFixed(2)} TL</td>
+                        <td style="color:#2b6cb0; font-weight:bold;">${odeme.toFixed(2)} TL</td>
+                        <td style="color:${kalan > 0 ? '#e53e3e' : '#38a169'}; font-weight:bold;">${kalan.toFixed(2)} TL</td>
+                    </tr>
+                `;
+            });
 
             // Detay Tablosu
             const tblDetay = document.getElementById('tblDetaylar');
             tblDetay.innerHTML = "";
             if (süzülen.length === 0) {
-                tblDetay.innerHTML = "<tr><td colspan='7' style='text-align:center; color:#a0aec0;'>Kayıt bulunamadı.</td></tr>";
+                tblDetay.innerHTML = "<tr><td colspan='10' style='text-align:center; color:#a0aec0;'>Kayıt bulunamadı.</td></tr>";
                 return;
             }
 
@@ -366,6 +415,16 @@
                 if (item.modul === "Faturalar") badgeClass = "badge-fatura";
                 if (item.modul === "Araç") badgeClass = "badge-arac";
                 if (item.modul === "Bakım") badgeClass = "badge-bakim";
+                if (item.modul === "Ödemeler") badgeClass = "badge-odeme";
+
+                let durumBadge = "-";
+                if (item.modul !== "Ödemeler") {
+                    if (item.durum === "Ödendi") durumBadge = `<span class="badge badge-odendi">Ödendi</span>`;
+                    else if (item.durum === "Kısmi Ödeme") durumBadge = `<span class="badge badge-kismi">Kısmi Ödeme</span>`;
+                    else durumBadge = `<span class="badge badge-odenmedi">Ödenmedi</span>`;
+                } else {
+                    durumBadge = `<span class="badge badge-odeme">Ödeme Yapıldı</span>`;
+                }
 
                 let gitButonu = userPermission === "oku"
                     ? `<button class="btn-go" disabled title="Oku modunda yönlendirme yapılamaz">➔ Git</button>`
@@ -379,9 +438,10 @@
                         <td>${item.aciklama}</td>
                         <td>${item.odeyen || '-'}</td>
                         <td style="text-align:right; font-weight:bold;">${item.tutar.toFixed(2)} TL</td>
-                        <td style="text-align:center;">
-                            ${gitButonu}
-                        </td>
+                        <td style="text-align:right; color:#2b6cb0; font-weight:bold;">${item.modul !== 'Ödemeler' ? (item.odenen ? item.odenen.toFixed(2) + ' TL' : '0.00 TL') : '-'}</td>
+                        <td style="text-align:right; color:#e53e3e; font-weight:bold;">${item.modul !== 'Ödemeler' ? (item.kalan ? item.kalan.toFixed(2) + ' TL' : '0.00 TL') : '-'}</td>
+                        <td style="text-align:center;">${durumBadge}</td>
+                        <td style="text-align:center;">${gitButonu}</td>
                     </tr>
                 `;
             });
