@@ -10,8 +10,11 @@
 
     <script>
         const ADMIN_KULLANICI = "murat";
+        const rawUser = localStorage.getItem('currentUser') || '';
+        const currentUser = rawUser.toLowerCase().trim();
+
         if (localStorage.getItem('isLoggedIn') !== 'true') window.location.replace('giris.html');
-        if (localStorage.getItem('currentUser') !== ADMIN_KULLANICI) {
+        if (currentUser !== ADMIN_KULLANICI) {
             alert("Bu sayfaya sadece yönetici erişebilir!");
             window.location.replace('index.html');
         }
@@ -116,10 +119,17 @@
     </div>
 
     <script>
-        // Firebase Yapılandırması
+        // Firebase Yapılandırması (Giriş ve Ana Sayfa ile Eşitlendi)
         const firebaseConfig = {
-            databaseURL: "https://hasat-3783c-default-rtdb.europe-west1.firebasedatabase.app"
+            apiKey: "AIzaSyApN7vhnM30cQ1RdAsXiUS8AY08G2QklYY",
+            authDomain: "findikhasattakip.firebaseapp.com",
+            databaseURL: "https://findikhasattakip-default-rtdb.firebaseio.com",
+            projectId: "findikhasattakip",
+            storageBucket: "findikhasattakip.firebasestorage.app",
+            messagingSenderId: "296913243470",
+            appId: "1:296913243470:web:f2a6cfed4196ff44e0221f"
         };
+
         if (!firebase.apps.length) {
             firebase.initializeApp(firebaseConfig);
         }
@@ -167,7 +177,7 @@
             });
         });
 
-        // 📜 İşlem Loglarını Canlı Dinle (Son 50 İşlem - Doğru Kronolojik Sıralama)
+        // 📜 İşlem Loglarını Canlı Dinle (Son 50 İşlem)
         db.ref('logsDB').orderByChild('timestamp').limitToLast(50).on('value', (snapshot) => {
             const tbody = document.getElementById('logTable');
             tbody.innerHTML = "";
@@ -182,7 +192,6 @@
                 logList.push(childSnap.val());
             });
 
-            // En yeni log en üstte görünecek şekilde sıralamayı ters çeviriyoruz
             logList.reverse().forEach(log => {
                 const isFarkli = log.farkliLokasyon || (log.islem && log.islem.includes('Farklı Lokasyon'));
                 const islemStili = isFarkli 
