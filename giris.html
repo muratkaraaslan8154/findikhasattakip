@@ -150,23 +150,33 @@
                 status.innerText = "Bağlantı hatası: " + error.message;
             });
         }
-function grantAccess(username) {
-    db.ref('logsDB').push({
-        kullanici: username,
-        islem: 'Sisteme Giriş Yapıldı',
-        detay: 'Başarılı Oturum',
-        tarih: new Date().toLocaleString('tr-TR'),
-        timestamp: firebase.database.ServerValue.TIMESTAMP
-    });
 
-    const status = document.getElementById('status');
-    status.style.color = "#27ae60";
-    status.innerText = "Giriş Başarılı! Yönlendiriliyor...";
+        function grantAccess(username) {
+            // Log Kaydı Ekle
+            db.ref('logsDB').push({
+                kullanici: username,
+                islem: 'Sisteme Giriş Yapıldı',
+                detay: 'Başarılı Oturum',
+                tarih: new Date().toLocaleString('tr-TR'),
+                timestamp: firebase.database.ServerValue.TIMESTAMP
+            });
 
-    localStorage.setItem('currentUser', username);
-    localStorage.setItem('isLoggedIn', 'true');
+            // Online Durumu Güncelle
+            db.ref('onlineUsersDB/' + username).set({
+                status: 'online',
+                lastSeen: new Date().toLocaleString('tr-TR'),
+                device: /Android|iPhone|iPad/i.test(navigator.userAgent) ? '📱 Mobil' : '💻 Bilgisayar'
+            });
 
-    setTimeout(() => { window.location.href = 'index.html?auth=ok'; }, 1000);
-}    </script>
+            const status = document.getElementById('status');
+            status.style.color = "#27ae60";
+            status.innerText = "Giriş Başarılı! Yönlendiriliyor...";
+
+            localStorage.setItem('currentUser', username);
+            localStorage.setItem('isLoggedIn', 'true');
+
+            setTimeout(() => { window.location.href = 'index.html?auth=ok'; }, 1000);
+        }
+    </script>
 </body>
 </html>

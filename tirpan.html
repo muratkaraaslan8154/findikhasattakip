@@ -24,72 +24,111 @@
         .form-group { margin-bottom: 12px; }
         label { display: block; font-size: 0.85rem; font-weight: bold; margin-bottom: 5px; color: #4a5568;}
         input, select { width: 100%; padding: 10px; border: 1px solid #cbd5e0; border-radius: 6px; box-sizing: border-box; font-size: 0.95rem; }
-        .row { display: flex; gap: 10px; } .row > div { flex: 1; }
-        .btn-save { background: #dd6b20; color: white; width: 100%; padding: 14px; border: none; border-radius: 6px; font-weight: bold; font-size: 1rem; cursor: pointer; }
-        .btn-cancel { background: #a0aec0; margin-top: 8px; display: none; }
-        .btn-back { display: block; text-align: center; margin-top: 20px; color: #718096; text-decoration: none; font-weight: 500;}
-        .record-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; margin-bottom: 10px; font-size: 0.88rem; }
-        .record-header { display: flex; justify-content: space-between; font-weight: bold; color: #dd6b20; border-bottom: 1px solid #edf2f7; padding-bottom: 6px; margin-bottom: 8px; }
-        .btn-sm { padding: 4px 8px; font-size: 0.75rem; border-radius: 4px; border: none; cursor: pointer; font-weight: bold; }
-        .btn-edit { background: #3182ce; color: white; }
-        .btn-del { background: #e53e3e; color: white; margin-left: 5px; }
-        .btn-history { background: #dd6b20; color: white; margin-left: 5px; }
-        .history-box { background: #fffaf0; border-left: 3px solid #dd6b20; padding: 8px; margin-top: 8px; font-size: 0.8rem; display: none; border-radius: 4px; color: #7b341e; }
-        .log-item { border-bottom: 1px dashed #cbd5e0; padding: 4px 0; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        
+        .btn-save { background: #dd6b20; color: white; border: none; padding: 12px; width: 100%; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 1rem; margin-top: 5px;}
+        .btn-cancel { background: #a0aec0; color: white; border: none; padding: 8px; width: 100%; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 0.9rem; margin-top: 8px; display: none;}
+        .btn-back { background: #edf2f7; color: #4a5568; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; margin-bottom: 15px; text-decoration: none; display: inline-block;}
+        
+        .history-card { background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; margin-bottom: 10px; }
+        .history-header { display: flex; justify-content: space-between; font-weight: bold; border-bottom: 1px dashed #cbd5e0; padding-bottom: 5px; margin-bottom: 8px; font-size: 0.9rem;}
+        .history-body { font-size: 0.85rem; color: #4a5568; display: grid; grid-template-columns: 1fr 1fr; gap: 5px;}
+        .total-badge { background: #feebc8; color: #c05621; padding: 4px 8px; border-radius: 4px; font-weight: bold; display: inline-block; margin-top: 5px; font-size: 0.85rem;}
+        
+        .actions-box { grid-column: span 2; display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px; border-top: 1px solid #edf2f7; padding-top: 6px; }
+        .btn-edit { background: #3182ce; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 0.75rem; }
+        .btn-del { background: #e53e3e; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 0.75rem; }
     </style>
 </head>
 <body>
+
     <div class="container">
+        <a href="index.html" class="btn-back">⬅️ Ana Menüye Dön</a>
+        
         <div class="header-title">
-            <h2>🚜 Tırpan Masrafı</h2>
-            <span id="userDisplay" class="user-tag"></span>
+            <h2>⚙️ Tırpan Masrafları</h2>
+            <span class="user-tag" id="userDisplay">Kullanıcı: Yükleniyor...</span>
         </div>
 
         <div id="readOnlyBanner" class="readonly-banner">
-            👁️ Bu sayfada sadece görüntüleme yetkiniz bulunmaktadır.
+            👁️ Salt Okunur Mod: Bu sayfadaki verileri görüntüleyebilirsiniz ancak yeni kayıt ekleyemez veya değiştiremezsiniz.
         </div>
 
-        <div id="formKonteyner">
-            <input type="hidden" id="editKey">
+        <input type="hidden" id="editKey" value="">
+
+        <div class="form-section">
+            <div class="form-group">
+                <label>Görüntülenecek / İşlem Yapılacak Sezon:</label>
+                <select id="sezonSecici" onchange="verileriYukle()"></select>
+            </div>
+        </div>
+
+        <div id="formContainer">
+            <div class="form-section">
+                <div class="form-group">
+                    <label>Tarih:</label>
+                    <input type="date" id="tarih">
+                </div>
+                <div class="form-group">
+                    <label>Tırpan Yapılan Yer / Açıklama:</label>
+                    <input type="text" id="tirpanAciklama" placeholder="Örn: Ev arkası fındıklık tırpanı">
+                </div>
+                <div class="form-group">
+                    <label>Tırpan Yevmiyesi / İşçilik Ücreti (TL):</label>
+                    <input type="number" id="tirpanUcreti" placeholder="0.00" oninput="toplamHesapla()">
+                </div>
+            </div>
 
             <div class="form-section">
-                <div class="row">
-                    <div class="form-group"><label>Sezon (Yıl)</label><select id="sezonSecici"></select></div>
-                    <div class="form-group"><label>Tarih</label><input type="date" id="tarih"></div>
+                <div class="form-group">
+                    <label>Kullanılan Araç:</label>
+                    <select id="aracPlaka"></select>
                 </div>
-                <div class="form-group"><label>Yapılan Alan / Açıklama</label><input type="text" id="tirpanAciklama" placeholder="Örn: Üst Bahçe Tırpanı / Benzin-Misina"></div>
-                <div class="row">
-                    <div class="form-group"><label>Tırpan / İşçilik Ücreti (TL)</label><input type="number" id="tirpanUcreti" placeholder="0.00"></div>
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label>Yapılan KM:</label>
+                        <input type="number" id="yapilanKm" placeholder="KM" oninput="yolMasrafiHesapla()">
+                    </div>
+                    <div class="form-group">
+                        <label>Ort. Tüketim (L/100km):</label>
+                        <input type="number" id="ortTuketim" placeholder="Örn: 6.5" step="0.1" oninput="yolMasrafiHesapla()">
+                    </div>
+                </div>
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label>Hesaplanan Litre:</label>
+                        <input type="number" id="yolLitre" placeholder="Litre" readonly style="background:#edf2f7;">
+                    </div>
+                    <div class="form-group">
+                        <label>Yakıt Litre Fiyatı (TL):</label>
+                        <input type="number" id="yolLitreFiyat" placeholder="Örn: 42.50" step="0.1" oninput="yolMasrafiHesapla()">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Hesaplanan Yol Masrafı (TL):</label>
+                    <input type="number" id="yolMasrafi" placeholder="0.00" readonly style="background:#e2e8f0; font-weight:bold;">
+                </div>
+                <div class="form-group">
+                    <label>Yol Güzergahı / Açıklama:</label>
+                    <input type="text" id="yolAciklama" placeholder="Örn: Ev - Bahçe arası git-gel">
                 </div>
             </div>
 
-            <div class="form-section" style="border-left-color: #805ad5;">
-                <label style="color: #2d3748; font-size: 0.95rem; margin-bottom: 10px; display: block; font-weight: bold;">🚗 Tarlaya Gidiş - Geliş Yol Masrafı</label>
-                <div class="form-group"><label>Araç Plakası</label><select id="aracPlaka"></select></div>
-                <div class="row">
-                    <div class="form-group"><label>Yapılan KM</label><input type="number" id="yapilanKm" placeholder="Örn: 100" oninput="yolHesapla()"></div>
-                    <div class="form-group"><label>Ort. Tüketim (L/100 KM)</label><input type="number" id="ortTuketim" placeholder="Örn: 7.5" step="0.1" oninput="yolHesapla()"></div>
+            <div class="form-section">
+                <div class="form-group">
+                    <label>Ödemeyi Yapan Kişi:</label>
+                    <select id="odeyenKisi"></select>
                 </div>
-                <div class="row">
-                    <div class="form-group"><label>Harcanan Yakıt Litresi</label><input type="number" id="yolLitre" placeholder="Otomatik/Manuel" step="0.1" oninput="yolHesapla()"></div>
-                    <div class="form-group"><label>Litre Fiyatı (TL)</label><input type="number" id="yolLitreFiyat" placeholder="Örn: 44.5" step="0.1" oninput="yolHesapla()"></div>
+                <div style="text-align: right; margin-bottom: 10px;">
+                    <span class="total-badge" id="genelToplamGösterge">Toplam Masraf: 0 TL</span>
                 </div>
-                <div class="form-group"><label>Otomatik Tutar (TL)</label><input type="number" id="yolMasrafi" placeholder="0.00" readonly style="background:#edf2f7; font-weight:bold;"></div>
-                <div class="form-group"><label>Yol / Araç Açıklaması</label><input type="text" id="yolAciklama" placeholder="Örn: Tırpan taşıma yakıtı..."></div>
+                <button class="btn-save" id="btnKaydet" onclick="tirpanKaydet()">Verileri Kaydet</button>
+                <button class="btn-cancel" id="btnIptal" onclick="formuSifirla()">İptal Et</button>
             </div>
-
-            <div class="form-section" style="border-left-color: #e53e3e;">
-                <div class="form-group"><label>💰 Ödemeyi Yapan Alacaklı</label><select id="odeyenKisi"></select></div>
-            </div>
-
-            <button class="btn-save" id="btnKaydet" onclick="kaydet()">Verileri Kaydet</button>
-            <button class="btn-save btn-cancel" id="btnIptal" onclick="formuSifirla()">İptal / Yeni Kayıt</button>
         </div>
 
-        <h3 style="color: #2d3748; margin-top: 20px; font-size: 1.1rem;">📋 Kayıtlı Tırpan İşlemleri</h3>
-        <div id="kayitListesi">Yükleniyor...</div>
-
-        <a href="index.html" class="btn-back">← Ana Menüye Dön</a>
+        <h3 style="color:#2d3748; margin-top: 20px; font-size:1.1rem; border-bottom:2px solid #edf2f7; padding-bottom:5px;">📋 Geçmiş Tırpan Kayıtları</h3>
+        <div id="gecmisListesi">Yükleniyor...</div>
     </div>
 
     <script>
@@ -105,209 +144,247 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        let lokalDB = {};
-        document.getElementById('tarih').valueAsDate = new Date();
+        const currentUser = localStorage.getItem('currentUser') || 'Anonim';
+        document.getElementById('userDisplay').innerText = `Kullanıcı: ${currentUser}`;
 
-        const currentUser = localStorage.getItem('currentUser') || "";
-        if (currentUser) document.getElementById('userDisplay').innerText = `(${currentUser})`;
+        // --- ONLINE DURUM & LOGLEMA ---
+        if (currentUser !== 'Anonim') {
+            const connectedRef = db.ref('.info/connected');
+            const userPresenceRef = db.ref('onlineUsersDB/' + currentUser);
 
-        let userPermission = "tam";
-
-        // YETKİ KONTROLÜ
-        db.ref('usersDB/' + currentUser + '/permissions/tirpan').on('value', (s) => {
-            userPermission = s.val() || "tam";
-            if (userPermission === "yok") {
-                alert("Bu sayfaya erişim yetkiniz bulunmamaktadır!");
-                window.location.replace('index.html');
-            } else if (userPermission === "oku") {
-                document.getElementById('formKonteyner').style.display = 'none';
-                document.getElementById('readOnlyBanner').style.display = 'block';
-                listeyiCiz(); 
-            } else {
-                document.getElementById('formKonteyner').style.display = 'block';
-                document.getElementById('readOnlyBanner').style.display = 'none';
-                listeyiCiz();
-            }
-        });
-
-        let varsayilanlar = {};
-        let sezonlar = [];
-        let kisiler = [];
-        let araclar = [];
-
-        db.ref('varsayilanlarDB').on('value', (snapshot) => {
-            varsayilanlar = snapshot.val() || {};
-            doldurSezonlar();
-            doldurKisiler();
-            doldurAraclar();
-        });
-
-        db.ref('sezonlarDB').on('value', (snapshot) => {
-            sezonlar = snapshot.val() || [];
-            doldurSezonlar();
-        });
-
-        db.ref('kisilerDB').on('value', (snapshot) => {
-            kisiler = snapshot.val() || [];
-            doldurKisiler();
-        });
-
-        db.ref('araclarDB').on('value', (snapshot) => {
-            araclar = snapshot.val() || [];
-            doldurAraclar();
-        });
-
-        db.ref('islemler/tirpan').on('value', (snapshot) => {
-            lokalDB = snapshot.val() || {};
-            listeyiCiz();
-        });
-
-        function doldurSezonlar() {
-            const select = document.getElementById('sezonSecici');
-            if (!select) return;
-            const mevcutSecim = select.value;
-            select.innerHTML = "";
-            const sortedSezonlar = [...sezonlar].sort().reverse();
-            sortedSezonlar.forEach(s => { select.innerHTML += `<option value="${s}">${s}</option>`; });
-            if (mevcutSecim && [...select.options].some(o => o.value === mevcutSecim)) select.value = mevcutSecim;
-            else if (varsayilanlar.sezon) select.value = varsayilanlar.sezon;
-        }
-
-        function doldurKisiler() {
-            const select = document.getElementById('odeyenKisi');
-            if (!select) return;
-            const mevcutSecim = select.value;
-            select.innerHTML = '<option value="">-- Ödeyen Seçin --</option>';
-            kisiler.forEach(k => { select.innerHTML += `<option value="${k}">${k}</option>`; });
-            if (mevcutSecim && [...select.options].some(o => o.value === mevcutSecim)) select.value = mevcutSecim;
-            else if (varsayilanlar.kisi) select.value = varsayilanlar.kisi;
-        }
-
-        function doldurAraclar() {
-            const select = document.getElementById('aracPlaka');
-            if (!select) return;
-            const mevcutSecim = select.value;
-            select.innerHTML = '<option value="">-- Araç Seçin --</option>';
-            araclar.forEach(a => { select.innerHTML += `<option value="${a}">${a}</option>`; });
-            if (mevcutSecim && [...select.options].some(o => o.value === mevcutSecim)) select.value = mevcutSecim;
-            else if (varsayilanlar.arac) select.value = varsayilanlar.arac;
-        }
-
-        function yolHesapla() {
-            let km = Number(document.getElementById('yapilanKm').value) || 0;
-            let ort = Number(document.getElementById('ortTuketim').value) || 0;
-            let fiyat = Number(document.getElementById('yolLitreFiyat').value) || 0;
-            let litreInput = document.getElementById('yolLitre');
-            if (km > 0 && ort > 0) litreInput.value = ((km * ort) / 100).toFixed(2);
-            let litre = Number(litreInput.value) || 0;
-            if (litre > 0 && fiyat > 0) document.getElementById('yolMasrafi').value = (litre * fiyat).toFixed(2);
-        }
-
-        function listeyiCiz() {
-            const listeDiv = document.getElementById('kayitListesi');
-            listeDiv.innerHTML = "";
-            const keys = Object.keys(lokalDB).reverse();
-            if (keys.length === 0) { listeDiv.innerHTML = "<p style='color:#718096;'>Kayıt yok.</p>"; return; }
-
-            keys.forEach(key => {
-                const item = lokalDB[key];
-                const cur = item.current || item;
-                let toplamTutar = (cur.tirpanUcreti || 0) + (cur.yolMasrafi || 0);
-
-                let historyHTML = "";
-                if (item.history) {
-                    Object.values(item.history).reverse().forEach(log => {
-                        historyHTML += `<div class="log-item"><b>[${log.zaman}]</b> ${log.kullanici}: <br>${log.degisiklik}</div>`;
+            connectedRef.on('value', (snap) => {
+                if (snap.val() === true) {
+                    userPresenceRef.onDisconnect().set({
+                        status: 'offline',
+                        lastSeen: new Date().toLocaleString('tr-TR')
                     });
-                } else { historyHTML = "<div class='log-item'>Geçmiş yok.</div>"; }
 
-                let islemButonlari = "";
-                let gecmisAlani = "";
-                
-                // OKUMA MODU KONTROLÜ
-                if (userPermission !== "oku") {
-                    islemButonlari = `
-                        <div style="margin-top:8px;">
-                            <button class="btn-sm btn-edit" onclick="duzenle('${key}')">✏️ Düzenle</button>
-                            <button class="btn-sm btn-del" onclick="kayitSil('${key}')">🗑️ Sil</button>
-                            <button class="btn-sm btn-history" onclick="gecmisAcKapa('${key}')">📜 Geçmişi Gör</button>
-                        </div>
-                    `;
-                    gecmisAlani = `<div id="hist_${key}" class="history-box"><strong>🕒 Değişiklik Günlüğü:</strong>${historyHTML}</div>`;
+                    userPresenceRef.set({
+                        status: 'online',
+                        lastSeen: new Date().toLocaleString('tr-TR'),
+                        device: /Android|iPhone|iPad/i.test(navigator.userAgent) ? '📱 Mobil' : '💻 Bilgisayar'
+                    });
                 }
-
-                listeDiv.innerHTML += `
-                    <div class="record-card">
-                        <div class="record-header">
-                            <span>🚜 ${cur.tirpanAciklama || 'Tırpan İşlemi'} (${cur.sezon})</span>
-                            <span>💰 ${toplamTutar.toFixed(2)} TL</span>
-                        </div>
-                        <div><b>Tarih:</b> ${cur.tarih} | <b>Tırpan Ücreti:</b> ${cur.tirpanUcreti || 0} TL</div>
-                        <div><b>Yol Yakıtı:</b> ${cur.yolMasrafi || 0} TL (${cur.aracPlaka || 'Araçsız'})</div>
-                        <div><b>Ödeyen:</b> ${cur.odeyen}</div>
-                        ${islemButonlari}
-                        ${gecmisAlani}
-                    </div>`;
             });
         }
 
-        function kaydet() {
-            if (userPermission === "oku") return;
-            const editKey = document.getElementById('editKey').value;
-            const yeniVeri = {
-                modul: "Tırpan",
-                sezon: document.getElementById('sezonSecici').value,
-                tarih: document.getElementById('tarih').value,
-                tirpanAciklama: document.getElementById('tirpanAciklama').value,
-                tirpanUcreti: Number(document.getElementById('tirpanUcreti').value),
-                aracPlaka: document.getElementById('aracPlaka').value,
-                yapilanKm: Number(document.getElementById('yapilanKm').value),
-                ortTuketim: Number(document.getElementById('ortTuketim').value),
-                yolLitre: Number(document.getElementById('yolLitre').value),
-                yolLitreFiyat: Number(document.getElementById('yolLitreFiyat').value),
-                yolMasrafi: Number(document.getElementById('yolMasrafi').value),
-                yolAciklama: document.getElementById('yolAciklama').value,
-                odeyen: document.getElementById('odeyenKisi').value,
-                zamanDamgasi: new Date().getTime()
-            };
+        function logEkle(islemAdi, detay = '') {
+            db.ref('logsDB').push({
+                kullanici: currentUser,
+                islem: islemAdi,
+                detay: detay,
+                tarih: new Date().toLocaleString('tr-TR'),
+                timestamp: firebase.database.ServerValue.TIMESTAMP
+            });
+        }
 
-            const aktifKullanici = localStorage.getItem('currentUser') || "Sistem Kullanıcısı";
+        // Sayfa açıldığında log kaydı
+        logEkle("Sayfa Ziyareti", "Tırpan Masrafları Sayfası");
 
-            if (editKey) {
-                const eskiVeri = (lokalDB[editKey].current || lokalDB[editKey]);
-                let farklar = [];
-                for (let p in yeniVeri) {
-                    if (p !== 'zamanDamgasi' && eskiVeri[p] !== yeniVeri[p]) farklar.push(`${p}: (${eskiVeri[p] || 'boş'} ➔ ${yeniVeri[p] || 'boş'})`);
+        document.getElementById('tarih').valueAsDate = new Date();
+
+        let userPermission = "tam";
+        let varsayilanlar = {};
+        let tumKayıtlar = {};
+
+        if (currentUser) {
+            db.ref('usersDB/' + currentUser).on('value', (snapshot) => {
+                const userData = snapshot.val();
+                if (userData && userData.permissions) {
+                    userPermission = userData.permissions.tirpan || "tam";
+                    yetkiUygula();
                 }
-                if (farklar.length > 0) {
-                    db.ref(`islemler/tirpan/${editKey}/current`).set(yeniVeri);
-                    db.ref(`islemler/tirpan/${editKey}/history`).push({
-                        zaman: new Date().toLocaleString('tr-TR'),
-                        kullanici: aktifKullanici,
-                        degisiklik: farklar.join(", ") + " güncellendi."
-                    });
-                    alert("Tırpan kaydı güncellendi!");
+            });
+        }
+
+        function yetkiUygula() {
+            if (userPermission === "oku") {
+                document.getElementById('formContainer').style.display = "none";
+                document.getElementById('readOnlyBanner').style.display = "block";
+            } else {
+                document.getElementById('formContainer').style.display = "block";
+                document.getElementById('readOnlyBanner').style.display = "none";
+            }
+            verileriYukle();
+        }
+
+        db.ref('varsayilanlarDB').on('value', (snapshot) => {
+            varsayilanlar = snapshot.val() || {};
+        });
+
+        db.ref('sezonlarDB').on('value', (snapshot) => {
+            const list = snapshot.val() || ["2026"];
+            const select = document.getElementById('sezonSecici');
+            select.innerHTML = "";
+            const arr = Array.isArray(list) ? list : Object.values(list);
+            arr.forEach(s => {
+                select.innerHTML += `<option value="${s}">${s} Sezonu</option>`;
+            });
+            if (varsayilanlar.sezon) select.value = varsayilanlar.sezon;
+            verileriYukle();
+        });
+
+        db.ref('araclarDB').on('value', (snapshot) => {
+            const list = snapshot.val() || [];
+            const select = document.getElementById('aracPlaka');
+            select.innerHTML = '<option value="">Araç Seçin...</option>';
+            const arr = Array.isArray(list) ? list : Object.values(list);
+            arr.forEach(a => select.innerHTML += `<option value="${a}">${a}</option>`);
+            if (varsayilanlar.arac) select.value = varsayilanlar.arac;
+        });
+
+        db.ref('kisilerDB').on('value', (snapshot) => {
+            const list = snapshot.val() || [];
+            const select = document.getElementById('odeyenKisi');
+            select.innerHTML = '<option value="">Kişi Seçin...</option>';
+            const arr = Array.isArray(list) ? list : Object.values(list);
+            arr.forEach(k => select.innerHTML += `<option value="${k}">${k}</option>`);
+            if (varsayilanlar.kisi) select.value = varsayilanlar.kisi;
+        });
+
+        function yolMasrafiHesapla() {
+            const km = parseFloat(document.getElementById('yapilanKm').value) || 0;
+            const tuketim = parseFloat(document.getElementById('ortTuketim').value) || 0;
+            const litreFiyat = parseFloat(document.getElementById('yolLitreFiyat').value) || 0;
+
+            if (km > 0 && tuketim > 0) {
+                const hesaplananLitre = (km * tuketim) / 100;
+                document.getElementById('yolLitre').value = hesaplananLitre.toFixed(2);
+
+                if (litreFiyat > 0) {
+                    const toplamYolMasrafi = hesaplananLitre * litreFiyat;
+                    document.getElementById('yolMasrafi').value = toplamYolMasrafi.toFixed(2);
+                } else {
+                    document.getElementById('yolMasrafi').value = "";
                 }
             } else {
-                db.ref('islemler/tirpan').push().set({ current: yeniVeri });
-                alert("Tırpan kaydı eklendi!");
+                document.getElementById('yolLitre').value = "";
+                document.getElementById('yolMasrafi').value = "";
             }
-            formuSifirla();
+            toplamHesapla();
         }
 
-        function kayitSil(key) {
-            if (userPermission === "oku") return;
+        function toplamHesapla() {
+            const tirpan = parseFloat(document.getElementById('tirpanUcreti').value) || 0;
+            const yol = parseFloat(document.getElementById('yolMasrafi').value) || 0;
+            const genel = tirpan + yol;
+            document.getElementById('genelToplamGösterge').innerText = `Toplam Masraf: ${genel.toFixed(2)} TL`;
+        }
+
+        function tirpanKaydet() {
+            if (userPermission === "oku") return alert("Salt okunur moddasınız!");
+
+            const tarih = document.getElementById('tarih').value;
+            const tirpanUcreti = parseFloat(document.getElementById('tirpanUcreti').value) || 0;
+            const yolMasrafi = parseFloat(document.getElementById('yolMasrafi').value) || 0;
+            const aciklama = document.getElementById('tirpanAciklama').value.trim();
+            const editKey = document.getElementById('editKey').value;
+
+            if (!tarih) return alert("Lütfen tarihi seçiniz!");
+            if (tirpanUcreti <= 0 && yolMasrafi <= 0) return alert("En az bir masraf kalemini (Tırpan veya Yol) giriniz!");
+
+            const kayitData = {
+                tarih: tarih,
+                sezon: document.getElementById('sezonSecici').value,
+                tirpanAciklama: aciklama,
+                tirpanUcreti: tirpanUcreti,
+                aracPlaka: document.getElementById('aracPlaka').value,
+                yapilanKm: parseFloat(document.getElementById('yapilanKm').value) || 0,
+                ortTuketim: parseFloat(document.getElementById('ortTuketim').value) || 0,
+                yolLitre: parseFloat(document.getElementById('yolLitre').value) || 0,
+                yolLitreFiyat: parseFloat(document.getElementById('yolLitreFiyat').value) || 0,
+                yolMasrafi: yolMasrafi,
+                yolAciklama: document.getElementById('yolAciklama').value.trim(),
+                toplamMasraf: tirpanUcreti + yolMasrafi,
+                odeyen: document.getElementById('odeyenKisi').value,
+                ekleyen: currentUser
+            };
+
+            if (editKey) {
+                db.ref('tirpanMasraflariDB/' + editKey).set(kayitData, (error) => {
+                    if (!error) {
+                        alert("Kayıt başarıyla güncellendi.");
+                        logEkle("Tırpan Masrafı Güncellendi", `${kayitData.toplamMasraf.toFixed(2)} TL - ${aciklama}`);
+                        formuSifirla();
+                    }
+                });
+            } else {
+                db.ref('tirpanMasraflariDB').push(kayitData, (error) => {
+                    if (!error) {
+                        alert("Kayıt başarıyla eklendi.");
+                        logEkle("Tırpan Masrafı Eklendi", `${kayitData.toplamMasraf.toFixed(2)} TL - ${aciklama}`);
+                        formuSifirla();
+                    }
+                });
+            }
+        }
+
+        function verileriYukle() {
+            const secilenSezon = document.getElementById('sezonSecici').value;
+            const container = document.getElementById('gecmisListesi');
+
+            db.ref('tirpanMasraflariDB').orderByChild('sezon').equalTo(secilenSezon).on('value', (snapshot) => {
+                tumKayıtlar = snapshot.val() || {};
+                container.innerHTML = "";
+
+                if (Object.keys(tumKayıtlar).length === 0) {
+                    container.innerHTML = "<p style='color:#718096; font-size:0.9rem;'>Bu sezona ait henüz tırpan kaydı bulunmuyor.</p>";
+                    return;
+                }
+
+                const keys = Object.keys(tumKayıtlar).reverse();
+
+                keys.forEach(key => {
+                    const d = tumKayıtlar[key];
+
+                    let actionsHtml = "";
+                    if (userPermission !== "oku") {
+                        actionsHtml = `
+                            <div class="actions-box">
+                                <button class="btn-edit" onclick="kayitDuzenle('${key}')">✏️ Düzenle</button>
+                                <button class="btn-del" onclick="tirpanSil('${key}')">🗑️ Sil</button>
+                            </div>
+                        `;
+                    }
+
+                    container.innerHTML += `
+                        <div class="history-card">
+                            <div class="history-header">
+                                <span>📅 ${d.tarih}</span>
+                                <span style="color:#dd6b20;">💰 ${d.toplamMasraf ? d.toplamMasraf.toFixed(2) : 0} TL</span>
+                            </div>
+                            <div class="history-body">
+                                <div><b>Tırpan:</b> ${d.tirpanAciklama || '-'} (${d.tirpanUcreti || 0} TL)</div>
+                                <div><b>Yol:</b> ${d.aracPlaka || '-'} (${d.yolMasrafi || 0} TL)</div>
+                                <div><b>Ödeyen:</b> ${d.odeyen || '-'}</div>
+                                <div><b>Ekleyen:</b> ${d.ekleyen || 'Anonim'}</div>
+                            </div>
+                            ${actionsHtml}
+                        </div>
+                    `;
+                });
+            });
+        }
+
+        function tirpanSil(key) {
+            if (userPermission === "oku") return alert("Salt okunur moddasınız!");
+
             if (confirm("Bu tırpan kaydını silmek istediğinize emin misiniz?")) {
-                db.ref('islemler/tirpan/' + key).remove();
+                const silinen = tumKayıtlar[key];
+                db.ref('tirpanMasraflariDB/' + key).remove(() => {
+                    logEkle("Tırpan Masrafı Silindi", silinen ? `${silinen.toplamMasraf || 0} TL - ${silinen.tirpanAciklama || ''}` : `ID: ${key}`);
+                });
             }
         }
 
-        function duzenle(key) {
+        function kayitDuzenle(key) {
             if (userPermission === "oku") return;
-            const data = lokalDB[key].current || lokalDB[key];
+
+            const data = tumKayıtlar[key];
+            if (!data) return;
+
             document.getElementById('editKey').value = key;
-            document.getElementById('sezonSecici').value = data.sezon;
-            document.getElementById('tarih').value = data.tarih;
+            document.getElementById('tarih').value = data.tarih || '';
             document.getElementById('tirpanAciklama').value = data.tirpanAciklama || '';
             document.getElementById('tirpanUcreti').value = data.tirpanUcreti || '';
             document.getElementById('aracPlaka').value = data.aracPlaka || '';
@@ -337,8 +414,6 @@
             if (varsayilanlar.kisi) document.getElementById('odeyenKisi').value = varsayilanlar.kisi;
             if (varsayilanlar.arac) document.getElementById('aracPlaka').value = varsayilanlar.arac;
         }
-
-        function gecmisAcKapa(key) { const el = document.getElementById(`hist_${key}`); el.style.display = el.style.display === "block" ? "none" : "block"; }
     </script>
 </body>
 </html>

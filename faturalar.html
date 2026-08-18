@@ -16,72 +16,81 @@
         h2 { color: #3182ce; margin: 0; font-size: 1.3rem; }
         .user-tag { color: #718096; font-size: 0.85rem; font-weight: normal; }
         .readonly-banner { background: #feebc8; color: #7b341e; text-align: center; padding: 12px; border-radius: 8px; font-weight: bold; font-size: 0.9rem; margin-bottom: 15px; display: none; }
+        
         .form-section { background: #f7fafc; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #3182ce; }
         .form-group { margin-bottom: 12px; }
         label { display: block; font-size: 0.85rem; font-weight: bold; margin-bottom: 5px; color: #4a5568;}
         input, select { width: 100%; padding: 10px; border: 1px solid #cbd5e0; border-radius: 6px; box-sizing: border-box; font-size: 0.95rem; }
-        .row { display: flex; gap: 10px; } .row > div { flex: 1; }
-        .btn-save { background: #3182ce; color: white; width: 100%; padding: 14px; border: none; border-radius: 6px; font-weight: bold; font-size: 1rem; cursor: pointer; }
-        .btn-cancel { background: #a0aec0; margin-top: 8px; display: none; }
-        .btn-back { display: block; text-align: center; margin-top: 20px; color: #718096; text-decoration: none; font-weight: 500;}
-        .record-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; margin-bottom: 10px; font-size: 0.88rem; }
-        .record-header { display: flex; justify-content: space-between; font-weight: bold; color: #3182ce; border-bottom: 1px solid #edf2f7; padding-bottom: 6px; margin-bottom: 8px; }
-        .btn-sm { padding: 4px 8px; font-size: 0.75rem; border-radius: 4px; border: none; cursor: pointer; font-weight: bold; }
-        .btn-edit { background: #3182ce; color: white; }
-        .btn-del { background: #e53e3e; color: white; margin-left: 5px; }
-        .btn-history { background: #dd6b20; color: white; margin-left: 5px; }
-        .history-box { background: #fffaf0; border-left: 3px solid #dd6b20; padding: 8px; margin-top: 8px; font-size: 0.8rem; display: none; border-radius: 4px; color: #7b341e; }
-        .log-item { border-bottom: 1px dashed #cbd5e0; padding: 4px 0; }
+        
+        .btn-save { background: #3182ce; color: white; border: none; padding: 12px; width: 100%; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 1rem; margin-top: 5px;}
+        .btn-cancel { background: #a0aec0; color: white; border: none; padding: 8px; width: 100%; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 0.9rem; margin-top: 8px; display: none;}
+        .btn-back { background: #edf2f7; color: #4a5568; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; margin-bottom: 15px; text-decoration: none; display: inline-block;}
+        
+        .history-card { background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; margin-bottom: 10px; }
+        .history-header { display: flex; justify-content: space-between; font-weight: bold; border-bottom: 1px dashed #cbd5e0; padding-bottom: 5px; margin-bottom: 8px; font-size: 0.9rem;}
+        .history-body { font-size: 0.85rem; color: #4a5568; display: grid; grid-template-columns: 1fr 1fr; gap: 5px;}
+        .actions-box { grid-column: span 2; display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px; border-top: 1px solid #edf2f7; padding-top: 6px; }
+        .btn-edit { background: #3182ce; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 0.75rem; }
+        .btn-del { background: #e53e3e; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 0.75rem; }
     </style>
 </head>
 <body>
+
     <div class="container">
+        <a href="index.html" class="btn-back">⬅️ Ana Menüye Dön</a>
+        
         <div class="header-title">
-            <h2>🧾 Fatura Masrafı</h2>
-            <span id="userDisplay" class="user-tag"></span>
+            <h2>⚡ Fatura Masrafları</h2>
+            <span class="user-tag" id="userDisplay">Kullanıcı: Yükleniyor...</span>
         </div>
 
         <div id="readOnlyBanner" class="readonly-banner">
-            👁️ Bu sayfada sadece görüntüleme yetkiniz bulunmaktadır.
+            👁️ Salt Okunur Mod: Bu sayfadaki verileri görüntüleyebilirsiniz ancak yeni kayıt ekleyemez veya değiştiremezsiniz.
         </div>
 
-        <div id="formKonteyner">
-            <input type="hidden" id="editKey">
+        <input type="hidden" id="editKey" value="">
 
+        <div class="form-section">
+            <div class="form-group">
+                <label>Görüntülenecek / İşlem Yapılacak Sezon:</label>
+                <select id="sezonSecici" onchange="verileriYukle()"></select>
+            </div>
+        </div>
+
+        <div id="formContainer">
             <div class="form-section">
-                <div class="row">
-                    <div class="form-group"><label>Sezon (Yıl)</label><select id="sezonSecici"></select></div>
-                    <div class="form-group"><label>Tarih</label><input type="date" id="tarih"></div>
+                <div class="form-group">
+                    <label>Fatura Türü (Abonelik):</label>
+                    <select id="faturaTurSelect"></select>
                 </div>
-                <div class="row">
-                    <div class="form-group">
-                        <label>Fatura Türü</label>
-                        <select id="faturaTuru">
-                            <option value="Elektrik">⚡ Elektrik</option>
-                            <option value="Su">💧 Su / Sulama</option>
-                            <option value="İnternet/Telefon">📞 Telefon / İnternet</option>
-                            <option value="dogalgaz">🔥 Doğalgaz</option>
-                            <option value="Diğer">📑 Diğer</option>
-                        </select>
-                    </div>
-                    <div class="form-group"><label>Fatura Tutarı (TL)</label><input type="number" id="faturaTutar" placeholder="0.00" step="0.1"></div>
+                <div class="form-group">
+                    <label>Tarih:</label>
+                    <input type="date" id="tarih">
                 </div>
-                <div class="form-group"><label>Tesisat / Abone / Fatura No</label><input type="text" id="tesisatNo" placeholder="Örn: 10293847"></div>
-                <div class="form-group"><label>Açıklama</label><input type="text" id="aciklama" placeholder="Örn: Ev/Bahçe Elektrik faturası"></div>
-            </div>
+                <div class="form-group">
+                    <label>Fatura Tutarı (TL):</label>
+                    <input type="number" id="faturaTutar" placeholder="0.00">
+                </div>
+                <div class="form-group">
+                    <label>Abone / Tesisat No (İsteğe Bağlı):</label>
+                    <input type="text" id="tesisatNo" placeholder="Örn: 10293847">
+                </div>
+                <div class="form-group">
+                    <label>Açıklama / Dönem:</label>
+                    <input type="text" id="aciklama" placeholder="Örn: Temmuz Ayı Elektrik">
+                </div>
+                <div class="form-group">
+                    <label>Ödemeyi Yapan Kişi:</label>
+                    <select id="odeyenKisi"></select>
+                </div>
 
-            <div class="form-section" style="border-left-color: #e53e3e;">
-                <div class="form-group"><label>💰 Ödemeyi Yapan Alacaklı</label><select id="odeyenKisi"></select></div>
+                <button class="btn-save" id="btnKaydet" onclick="faturaKaydet()">Verileri Kaydet</button>
+                <button class="btn-cancel" id="btnIptal" onclick="formuSifirla()">İptal Et</button>
             </div>
-
-            <button class="btn-save" id="btnKaydet" onclick="kaydet()">Verileri Kaydet</button>
-            <button class="btn-save btn-cancel" id="btnIptal" onclick="formuSifirla()">İptal / Yeni Kayıt</button>
         </div>
 
-        <h3 style="color: #2d3748; margin-top: 25px; font-size: 1.1rem;">📋 Kayıtlı Fatura İşlemleri</h3>
-        <div id="kayitListesi">Yükleniyor...</div>
-
-        <a href="index.html" class="btn-back">← Ana Menüye Dön</a>
+        <h3 style="color:#2d3748; margin-top: 20px; font-size:1.1rem; border-bottom:2px solid #edf2f7; padding-bottom:5px;">📋 Geçmiş Fatura Kayıtları</h3>
+        <div id="gecmisListesi">Yükleniyor...</div>
     </div>
 
     <script>
@@ -97,160 +106,209 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        let lokalDB = {};
-        document.getElementById('tarih').valueAsDate = new Date();
+        const currentUser = localStorage.getItem('currentUser') || 'Anonim';
+        document.getElementById('userDisplay').innerText = `Kullanıcı: ${currentUser}`;
 
-        const currentUser = localStorage.getItem('currentUser') || "";
-        if (currentUser) document.getElementById('userDisplay').innerText = `(${currentUser})`;
+        // --- ONLINE DURUM & LOGLEMA ---
+        if (currentUser !== 'Anonim') {
+            const connectedRef = db.ref('.info/connected');
+            const userPresenceRef = db.ref('onlineUsersDB/' + currentUser);
 
-        let userPermission = "tam";
+            connectedRef.on('value', (snap) => {
+                if (snap.val() === true) {
+                    userPresenceRef.onDisconnect().set({
+                        status: 'offline',
+                        lastSeen: new Date().toLocaleString('tr-TR')
+                    });
 
-        // YETKİ KONTROLÜ (Gelişmiş kontrol)
-        db.ref('usersDB/' + currentUser + '/permissions').on('value', (s) => {
-            const perms = s.val() || {};
-            userPermission = perms.fatura || perms.faturalar || "tam";
-
-            if (userPermission === "yok") {
-                alert("Bu sayfaya erişim yetkiniz bulunmamaktadır!");
-                window.location.replace('index.html');
-            } else if (userPermission === "oku") {
-                document.getElementById('formKonteyner').style.display = 'none';
-                document.getElementById('readOnlyBanner').style.display = 'block';
-                listeyiCiz(); 
-            } else {
-                document.getElementById('formKonteyner').style.display = 'block';
-                document.getElementById('readOnlyBanner').style.display = 'none';
-                listeyiCiz();
-            }
-        });
-
-        let varsayilanlar = {};
-        let sezonlar = [];
-        let kisiler = [];
-
-        db.ref('varsayilanlarDB').on('value', (s) => { varsayilanlar = s.val() || {}; doldurSezonlar(); doldurKisiler(); });
-        db.ref('sezonlarDB').on('value', (s) => { sezonlar = s.val() || []; doldurSezonlar(); });
-        db.ref('kisilerDB').on('value', (s) => { kisiler = s.val() || []; doldurKisiler(); });
-        db.ref('islemler/faturalar').on('value', (s) => { lokalDB = s.val() || {}; listeyiCiz(); });
-
-        function doldurSezonlar() {
-            const select = document.getElementById('sezonSecici');
-            if (!select) return;
-            const ms = select.value; select.innerHTML = "";
-            [...sezonlar].sort().reverse().forEach(s => select.innerHTML += `<option value="${s}">${s}</option>`);
-            if (ms && [...select.options].some(o => o.value === ms)) select.value = ms;
-            else if (varsayilanlar.sezon) select.value = varsayilanlar.sezon;
-        }
-
-        function doldurKisiler() {
-            const select = document.getElementById('odeyenKisi');
-            if (!select) return;
-            const ms = select.value; select.innerHTML = '<option value="">-- Ödeyen Seçin --</option>';
-            kisiler.forEach(k => select.innerHTML += `<option value="${k}">${k}</option>`);
-            if (ms && [...select.options].some(o => o.value === ms)) select.value = ms;
-            else if (varsayilanlar.kisi) select.value = varsayilanlar.kisi;
-        }
-
-        function listeyiCiz() {
-            const listeDiv = document.getElementById('kayitListesi');
-            listeDiv.innerHTML = "";
-            const keys = Object.keys(lokalDB).reverse();
-            if (keys.length === 0) { listeDiv.innerHTML = "<p style='color:#718096;'>Kayıt yok.</p>"; return; }
-
-            keys.forEach(key => {
-                const item = lokalDB[key];
-                const cur = item.current || item;
-
-                let islemButonlari = "";
-                let gecmisAlani = "";
-                
-                if (userPermission !== "oku") {
-                    let historyHTML = "";
-                    if (item.history) {
-                        Object.values(item.history).reverse().forEach(log => {
-                            historyHTML += `<div class="log-item"><b>[${log.zaman}]</b> ${log.kullanici}: <br>${log.degisiklik}</div>`;
-                        });
-                    } else { historyHTML = "<div class='log-item'>Geçmiş yok.</div>"; }
-
-                    islemButonlari = `
-                        <div style="margin-top:8px;">
-                            <button class="btn-sm btn-edit" onclick="duzenle('${key}')">✏️ Düzenle</button>
-                            <button class="btn-sm btn-del" onclick="kayitSil('${key}')">🗑️ Sil</button>
-                            <button class="btn-sm btn-history" onclick="gecmisAcKapa('${key}')">📜 Geçmişi Gör</button>
-                        </div>
-                    `;
-                    gecmisAlani = `<div id="hist_${key}" class="history-box"><strong>🕒 Değişiklik Günlüğü:</strong>${historyHTML}</div>`;
+                    userPresenceRef.set({
+                        status: 'online',
+                        lastSeen: new Date().toLocaleString('tr-TR'),
+                        device: /Android|iPhone|iPad/i.test(navigator.userAgent) ? '📱 Mobil' : '💻 Bilgisayar'
+                    });
                 }
-
-                listeDiv.innerHTML += `
-                    <div class="record-card">
-                        <div class="record-header">
-                            <span>🧾 ${cur.faturaTuru || 'Fatura'} (${cur.sezon})</span>
-                            <span>💰 ${(cur.faturaTutar || 0).toFixed(2)} TL</span>
-                        </div>
-                        <div><b>Tarih:</b> ${cur.tarih} | <b>Abone/Tesisat No:</b> ${cur.tesisatNo || '-'}</div>
-                        <div><b>Açıklama:</b> ${cur.aciklama || '-'}</div>
-                        <div><b>Ödeyen:</b> ${cur.odeyen}</div>
-                        ${islemButonlari}
-                        ${gecmisAlani}
-                    </div>`;
             });
         }
 
-        function kaydet() {
-            if (userPermission === "oku") return;
+        function logEkle(islemAdi, detay = '') {
+            db.ref('logsDB').push({
+                kullanici: currentUser,
+                islem: islemAdi,
+                detay: detay,
+                tarih: new Date().toLocaleString('tr-TR'),
+                timestamp: firebase.database.ServerValue.TIMESTAMP
+            });
+        }
+
+        logEkle("Sayfa Ziyareti", "Fatura Masrafları Sayfası");
+
+        document.getElementById('tarih').valueAsDate = new Date();
+
+        let userPermission = "tam";
+        let varsayilanlar = {};
+        let tumKayıtlar = {};
+
+        if (currentUser) {
+            db.ref('usersDB/' + currentUser).on('value', (snapshot) => {
+                const userData = snapshot.val();
+                if (userData && userData.permissions) {
+                    userPermission = userData.permissions.faturalar || "tam";
+                    yetkiUygula();
+                }
+            });
+        }
+
+        function yetkiUygula() {
+            if (userPermission === "oku") {
+                document.getElementById('formContainer').style.display = "none";
+                document.getElementById('readOnlyBanner').style.display = "block";
+            } else {
+                document.getElementById('formContainer').style.display = "block";
+                document.getElementById('readOnlyBanner').style.display = "none";
+            }
+            verileriYukle();
+        }
+
+        db.ref('varsayilanlarDB').on('value', (snapshot) => {
+            varsayilanlar = snapshot.val() || {};
+        });
+
+        db.ref('sezonlarDB').on('value', (snapshot) => {
+            const list = snapshot.val() || ["2026"];
+            const select = document.getElementById('sezonSecici');
+            select.innerHTML = "";
+            const arr = Array.isArray(list) ? list : Object.values(list);
+            arr.forEach(s => select.innerHTML += `<option value="${s}">${s} Sezonu</option>`);
+            if (varsayilanlar.sezon) select.value = varsayilanlar.sezon;
+            verileriYukle();
+        });
+
+        db.ref('aboneliklerDB').on('value', (snapshot) => {
+            const list = snapshot.val() || ["Elektrik", "Su", "İnternet", "Diğer"];
+            const select = document.getElementById('faturaTurSelect');
+            select.innerHTML = "";
+            const arr = Array.isArray(list) ? list : Object.values(list);
+            arr.forEach(a => select.innerHTML += `<option value="${a}">${a}</option>`);
+        });
+
+        db.ref('kisilerDB').on('value', (snapshot) => {
+            const list = snapshot.val() || [];
+            const select = document.getElementById('odeyenKisi');
+            select.innerHTML = '<option value="">Kişi Seçin...</option>';
+            const arr = Array.isArray(list) ? list : Object.values(list);
+            arr.forEach(k => select.innerHTML += `<option value="${k}">${k}</option>`);
+            if (varsayilanlar.kisi) select.value = varsayilanlar.kisi;
+        });
+
+        function faturaKaydet() {
+            if (userPermission === "oku") return alert("Salt okunur moddasınız!");
+
+            const tarih = document.getElementById('tarih').value;
+            const tutar = parseFloat(document.getElementById('faturaTutar').value) || 0;
+            const tur = document.getElementById('faturaTurSelect').value;
             const editKey = document.getElementById('editKey').value;
-            const yeniVeri = {
-                modul: "Faturalar",
+
+            if (!tarih) return alert("Lütfen tarihi seçiniz!");
+            if (tutar <= 0) return alert("Geçerli bir tutar giriniz!");
+
+            const kayitData = {
+                tarih: tarih,
                 sezon: document.getElementById('sezonSecici').value,
-                tarih: document.getElementById('tarih').value,
-                faturaTuru: document.getElementById('faturaTuru').value,
-                faturaTutar: Number(document.getElementById('faturaTutar').value),
-                tesisatNo: document.getElementById('tesisatNo').value,
-                aciklama: document.getElementById('aciklama').value,
+                tur: tur,
+                tutar: tutar,
+                tesisatNo: document.getElementById('tesisatNo').value.trim(),
+                aciklama: document.getElementById('aciklama').value.trim(),
                 odeyen: document.getElementById('odeyenKisi').value,
-                zamanDamgasi: new Date().getTime()
+                ekleyen: currentUser
             };
 
-            const aktifKullanici = localStorage.getItem('currentUser') || "Sistem Kullanıcısı";
-
             if (editKey) {
-                const eskiVeri = (lokalDB[editKey].current || lokalDB[editKey]);
-                let farklar = [];
-                for (let p in yeniVeri) {
-                    if (p !== 'zamanDamgasi' && eskiVeri[p] !== yeniVeri[p]) farklar.push(`${p}: (${eskiVeri[p] || 'boş'} ➔ ${yeniVeri[p] || 'boş'})`);
-                }
-                if (farklar.length > 0) {
-                    db.ref(`islemler/faturalar/${editKey}/current`).set(yeniVeri);
-                    db.ref(`islemler/faturalar/${editKey}/history`).push({
-                        zaman: new Date().toLocaleString('tr-TR'),
-                        kullanici: aktifKullanici,
-                        degisiklik: farklar.join(", ") + " güncellendi."
-                    });
-                    alert("Fatura kaydı güncellendi!");
-                }
+                db.ref('faturaMasraflariDB/' + editKey).set(kayitData, (error) => {
+                    if (!error) {
+                        alert("Fatura kaydı güncellendi.");
+                        logEkle("Fatura Kaydı Güncellendi", `${tutar.toFixed(2)} TL - ${tur}`);
+                        formuSifirla();
+                    }
+                });
             } else {
-                db.ref('islemler/faturalar').push().set({ current: yeniVeri });
-                alert("Fatura kaydı eklendi!");
+                db.ref('faturaMasraflariDB').push(kayitData, (error) => {
+                    if (!error) {
+                        alert("Fatura kaydı eklendi.");
+                        logEkle("Fatura Kaydı Eklendi", `${tutar.toFixed(2)} TL - ${tur}`);
+                        formuSifirla();
+                    }
+                });
             }
-            formuSifirla();
         }
 
-        function kayitSil(key) {
-            if (userPermission === "oku") return;
+        function verileriYukle() {
+            const secilenSezon = document.getElementById('sezonSecici').value;
+            const container = document.getElementById('gecmisListesi');
+
+            db.ref('faturaMasraflariDB').orderByChild('sezon').equalTo(secilenSezon).on('value', (snapshot) => {
+                tumKayıtlar = snapshot.val() || {};
+                container.innerHTML = "";
+
+                if (Object.keys(tumKayıtlar).length === 0) {
+                    container.innerHTML = "<p style='color:#718096; font-size:0.9rem;'>Bu sezona ait fatura kaydı bulunmuyor.</p>";
+                    return;
+                }
+
+                const keys = Object.keys(tumKayıtlar).reverse();
+
+                keys.forEach(key => {
+                    const d = tumKayıtlar[key];
+
+                    let actionsHtml = "";
+                    if (userPermission !== "oku") {
+                        actionsHtml = `
+                            <div class="actions-box">
+                                <button class="btn-edit" onclick="kayitDuzenle('${key}')">✏️ Düzenle</button>
+                                <button class="btn-del" onclick="faturaSil('${key}')">🗑️ Sil</button>
+                            </div>
+                        `;
+                    }
+
+                    container.innerHTML += `
+                        <div class="history-card">
+                            <div class="history-header">
+                                <span>⚡ ${d.tur || 'Fatura'} (${d.tarih})</span>
+                                <span style="color:#3182ce;">💰 ${d.tutar ? d.tutar.toFixed(2) : 0} TL</span>
+                            </div>
+                            <div class="history-body">
+                                <div><b>Açıklama:</b> ${d.aciklama || '-'}</div>
+                                <div><b>Abone/Tesisat:</b> ${d.tesisatNo || '-'}</div>
+                                <div><b>Ödeyen:</b> ${d.odeyen || '-'}</div>
+                                <div><b>Ekleyen:</b> ${d.ekleyen || 'Anonim'}</div>
+                            </div>
+                            ${actionsHtml}
+                        </div>
+                    `;
+                });
+            });
+        }
+
+        function faturaSil(key) {
+            if (userPermission === "oku") return alert("Salt okunur moddasınız!");
+
             if (confirm("Bu fatura kaydını silmek istediğinize emin misiniz?")) {
-                db.ref('islemler/faturalar/' + key).remove();
+                const silinen = tumKayıtlar[key];
+                db.ref('faturaMasraflariDB/' + key).remove(() => {
+                    logEkle("Fatura Kaydı Silindi", silinen ? `${silinen.tutar || 0} TL - ${silinen.tur || ''}` : `ID: ${key}`);
+                });
             }
         }
 
-        function duzenle(key) {
+        function kayitDuzenle(key) {
             if (userPermission === "oku") return;
-            const data = lokalDB[key].current || lokalDB[key];
+
+            const data = tumKayıtlar[key];
+            if (!data) return;
+
             document.getElementById('editKey').value = key;
-            document.getElementById('sezonSecici').value = data.sezon;
-            document.getElementById('tarih').value = data.tarih;
-            document.getElementById('faturaTuru').value = data.faturaTuru || 'Elektrik';
-            document.getElementById('faturaTutar').value = data.faturaTutar || '';
+            document.getElementById('faturaTurSelect').value = data.tur || '';
+            document.getElementById('tarih').value = data.tarih || '';
+            document.getElementById('faturaTutar').value = data.tutar || '';
             document.getElementById('tesisatNo').value = data.tesisatNo || '';
             document.getElementById('aciklama').value = data.aciklama || '';
             document.getElementById('odeyenKisi').value = data.odeyen || '';
@@ -272,8 +330,6 @@
             if (varsayilanlar.sezon) document.getElementById('sezonSecici').value = varsayilanlar.sezon;
             if (varsayilanlar.kisi) document.getElementById('odeyenKisi').value = varsayilanlar.kisi;
         }
-
-        function gecmisAcKapa(key) { const el = document.getElementById(`hist_${key}`); el.style.display = el.style.display === "block" ? "none" : "block"; }
     </script>
 </body>
 </html>

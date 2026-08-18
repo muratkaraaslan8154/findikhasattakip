@@ -66,7 +66,7 @@
     <div class="main-container">
         <div class="header">
             <h2>📊 Hasat Takip - Raporlama & Analiz</h2>
-            <button class="btn-print" onclick="window.print()">🖨️ Raporu Yazdır / PDF Al</button>
+            <button class="btn-print" onclick="raporYazdir()">🖨️ Raporu Yazdır / PDF Al</button>
         </div>
 
         <div id="readOnlyBanner" class="readonly-banner">
@@ -179,6 +179,41 @@
         let tumVeriler = [];
         let userPermission = "tam";
         const currentUser = localStorage.getItem('currentUser') || "";
+
+        // --- ONLINE TAKİP & LOG FONKSİYONLARI ---
+        function logEkle(islemAdi, detay = '') {
+            if (!currentUser) return;
+            db.ref('logsDB').push({
+                kullanici: currentUser,
+                islem: islemAdi,
+                detay: detay,
+                tarih: new Date().toLocaleString('tr-TR'),
+                timestamp: firebase.database.ServerValue.TIMESTAMP
+            });
+        }
+
+        if (currentUser) {
+            const connectedRef = db.ref('.info/connected');
+            const userPresenceRef = db.ref('onlineUsersDB/' + currentUser);
+
+            connectedRef.on('value', (snap) => {
+                if (snap.val() === true) {
+                    userPresenceRef.onDisconnect().set({
+                        status: 'offline',
+                        lastSeen: new Date().toLocaleString('tr-TR')
+                    });
+
+                    userPresenceRef.set({
+                        status: 'online',
+                        lastSeen: new Date().toLocaleString('tr-TR'),
+                        device: /Android|iPhone|iPad/i.test(navigator.userAgent) ? '📱 Mobil' : '💻 Bilgisayar'
+                    });
+                }
+            });
+
+            // Sayfaya girildiği an log kaydı yap
+            logEkle("Sayfa Ziyareti", "Raporlama & Analiz Paneli");
+        }
 
         // YETKİ KONTROLÜ
         db.ref('usersDB/' + currentUser + '/permissions').on('value', (s) => {
@@ -376,7 +411,13 @@
             document.getElementById('filterOdeyen').value = "Tüm";
             document.getElementById('filterBaslangic').value = "";
             document.getElementById('filterBitis').value = "";
+            logEkle("Rapor Filtreleri Sıfırlandı", "");
             filtreleVeCiz();
+        }
+
+        function raporYazdir() {
+            logEkle("Rapor Yazdırıldı/PDF Alındı", "");
+            window.print();
         }
     </script>
 </body>

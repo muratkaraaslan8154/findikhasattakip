@@ -17,98 +17,107 @@
         body { font-family: 'Roboto', sans-serif; background-color: #f4f6f9; padding: 1.5rem 1rem; display: flex; flex-direction: column; align-items: center; margin:0; }
         .container { width: 100%; max-width: 700px; background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
         h2 { border-bottom: 2px solid #805ad5; padding-bottom: 10px; color: #2d3748; margin-top: 0; display: flex; justify-content: space-between; align-items: center; font-size: 1.3rem;}
+        
+        .readonly-banner { background: #feebc8; color: #7b341e; text-align: center; padding: 12px; border-radius: 8px; font-weight: bold; font-size: 0.9rem; margin-bottom: 15px; display: none; }
+
         .form-section { background: #faf5ff; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #805ad5; }
         .form-group { margin-bottom: 12px; }
         label { display: block; font-size: 0.85rem; font-weight: bold; margin-bottom: 5px; color: #4a5568;}
-        input, select { width: 100%; padding: 9px; border: 1px solid #cbd5e0; border-radius: 6px; box-sizing: border-box; font-size: 0.9rem; }
-        .btn { background: #805ad5; color: white; width: 100%; padding: 10px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; transition: background 0.2s; font-size: 0.95rem; margin-top: 5px;}
-        .btn:hover { opacity: 0.9; }
-        .btn:disabled { background: #cbd5e0; cursor: not-allowed; }
+        input, select, textarea { width: 100%; padding: 10px; border: 1px solid #cbd5e0; border-radius: 6px; box-sizing: border-box; font-size: 0.95rem; }
+        
+        .btn-add { background: #805ad5; color: white; width: 100%; padding: 12px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 1rem; margin-top: 10px; }
+        .btn-back { background: #edf2f7; color: #4a5568; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; margin-bottom: 15px; text-decoration: none; display: inline-block;}
+        
         table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        th, td { text-align: left; padding: 8px; border-bottom: 1px solid #e2e8f0; font-size: 0.82rem; }
+        th, td { text-align: left; padding: 10px; border-bottom: 1px solid #e2e8f0; font-size: 0.85rem; }
         th { background-color: #edf2f7; color: #4a5568; }
         .btn-del { background: #e53e3e; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 0.75rem; }
-        .btn-back { display: block; text-align: center; margin-top: 20px; color: #718096; text-decoration: none; font-weight: 500;}
-        .read-only-notice { display: none; background: #feebc8; color: #744210; padding: 10px; border-radius: 6px; font-weight: bold; font-size: 0.85rem; text-align: center; margin-bottom: 15px; }
-        .alert-box { display:none; background: #fff5f5; border: 1px solid #feb2b2; border-left: 5px solid #e53e3e; border-radius: 6px; padding: 10px; margin-bottom: 15px; font-size: 0.85rem; color: #9b2c2c; }
-        .img-thumb { width: 40px; height: 40px; object-fit: cover; border-radius: 4px; border: 1px solid #cbd5e0; }
+        .img-thumb { width: 45px; height: 45px; object-fit: cover; border-radius: 6px; cursor: pointer; border: 1px solid #cbd5e0; }
     </style>
 </head>
 <body>
+
     <div class="container">
-        <h2>🚗 Araç Masrafları & Belge Takibi <span id="userTag" style="font-size:0.8rem; font-weight:normal; color:#718096;"></span></h2>
+        <a href="index.html" class="btn-back">⬅️ Ana Menüye Dön</a>
         
-        <div id="readOnlyNotice" class="read-only-notice">👁️ Bu sayfada sadece görüntüleme yetkiniz bulunmaktadır. Kayıt veya silme yapamazsınız.</div>
-        <div id="aracUyariBox" class="alert-box"></div>
+        <h2>🚗 Araç Masrafları <span style="font-size:0.85rem; color:#718096; font-weight:normal;" id="userDisplay"></span></h2>
 
-        <div class="form-section" id="aracFormArea">
-            <h3 style="margin-top:0; font-size:1rem; color:#553c9a;">Yeni Araç / Yol / Belge Kaydı</h3>
-            <div style="display: flex; gap: 10px;">
-                <div class="form-group" style="flex:1;">
-                    <label>Araç / Plaka:</label>
-                    <select id="plakaSelect"></select>
-                </div>
-                <div class="form-group" style="flex:1;">
-                    <label>Masraf Türü:</label>
-                    <select id="turSelect">
-                        <option value="⛽ Yakıt">⛽ Yakıt</option>
-                        <option value="🛠️ Bakım / Tamir">🛠️ Bakım / Tamir</option>
-                        <option value="📋 Muayene / Sigorta">📋 Muayene / Sigorta</option>
-                        <option value="💳 MTV Ödemesi">💳 MTV Ödemesi</option>
-                        <option value="🚨 Trafik Cezası">🚨 Trafik Cezası</option>
-                        <option value="🌉 Köprü / Otoyol (HGS)">🌉 Köprü / Otoyol (HGS)</option>
-                        <option value="📦 Diğer">📦 Diğer</option>
-                    </select>
-                </div>
-            </div>
-            <div style="display: flex; gap: 10px;">
-                <div class="form-group" style="flex:1;">
-                    <label>Ödeyen Kişi:</label>
-                    <select id="kisiSelect"></select>
-                </div>
-                <div class="form-group" style="flex:1;">
-                    <label>Sezon:</label>
-                    <select id="sezonSelect"></select>
-                </div>
-            </div>
-            <div style="display: flex; gap: 10px;">
-                <div class="form-group" style="flex:1;">
-                    <label>Tutar (TL):</label>
-                    <input type="number" step="0.01" id="aracTutar" placeholder="0.00">
-                </div>
-                <div class="form-group" style="flex:1;">
-                    <label>Km (Opsiyonel):</label>
-                    <input type="number" id="aracKm" placeholder="Örn: 145000">
-                </div>
-            </div>
-            <div style="display: flex; gap: 10px;">
-                <div class="form-group" style="flex:1;">
-                    <label>Tarih:</label>
-                    <input type="date" id="aracTarih">
-                </div>
-                <div class="form-group" style="flex:1;">
-                    <label>Belge / Makbuz Fotoğrafı:</label>
-                    <input type="file" id="aracFotoInput" accept="image/*">
-                </div>
-            </div>
+        <div id="readOnlyBanner" class="readonly-banner">
+            👁️ Salt Okunur Mod: Bu sayfadaki verileri görüntüleyebilirsiniz ancak yeni kayıt ekleyemez veya silemezsiniz.
+        </div>
+
+        <div id="formSection" class="form-section">
             <div class="form-group">
-                <label>Açıklama / Güzergah:</label>
-                <input type="text" id="aracAciklama" placeholder="Açıklama">
+                <label>Araç / Plaka:</label>
+                <select id="plakaSelect"></select>
             </div>
-            <button class="btn" id="btnKaydet" onclick="aracMasrafKaydet()" disabled>Yükleniyor...</button>
+
+            <div class="form-group">
+                <label>Masraf Türü:</label>
+                <select id="turSelect">
+                    <option value="Yakıt (Benzin/Motorin)">Yakıt (Benzin/Motorin)</option>
+                    <option value="Periyodik Bakım & Tamir">Periyodik Bakım & Tamir</option>
+                    <option value="Muayene & Sigorta & Kasko">Muayene & Sigorta & Kasko</option>
+                    <option value="Lastik & Yedek Parça">Lastik & Yedek Parça</option>
+                    <option value="Yıkama & Temizlik">Yıkama & Temizlik</option>
+                    <option value="Diğer Araç Gideri">Diğer Araç Gideri</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Ödeyen Kişi:</label>
+                <select id="kisiSelect"></select>
+            </div>
+
+            <div class="form-group">
+                <label>Ait Olduğu Sezon:</label>
+                <select id="sezonSelect"></select>
+            </div>
+
+            <div class="form-group">
+                <label>Tutar (TL):</label>
+                <input type="number" id="aracTutar" placeholder="0.00">
+            </div>
+
+            <div class="form-group">
+                <label>Araç Kilometresi (İsteğe Bağlı):</label>
+                <input type="number" id="aracKm" placeholder="Örn: 145000">
+            </div>
+
+            <div class="form-group">
+                <label>Tarih:</label>
+                <input type="date" id="aracTarih">
+            </div>
+
+            <div class="form-group">
+                <label>Fiş / Fatura Görseli (İsteğe Bağlı):</label>
+                <input type="file" id="aracFoto" accept="image/*">
+            </div>
+
+            <div class="form-group">
+                <label>Açıklama / Detaylar:</label>
+                <textarea id="aracAciklama" rows="2" placeholder="Örn: Yağ ve filtre değişimi yapıldı..."></textarea>
+            </div>
+
+            <button class="btn-add" onclick="aracMasrafKaydet()">Masraf Kaydını Ekle</button>
         </div>
 
-        <h3 style="font-size: 1rem; color: #2d3748; margin: 15px 0 5px 0;">Araç Masraf & Belge Geçmişi</h3>
-        <div style="overflow-x: auto;">
-            <table>
-                <thead>
-                    <tr><th>Tarih</th><th>Plaka</th><th>Tür</th><th>Ödeyen</th><th>Tutar</th><th>Fotoğraf</th><th>Açıklama</th><th id="actionHead">İşlem</th></tr>
-                </thead>
-                <tbody id="aracTableBody"></tbody>
-            </table>
-        </div>
-
-        <a href="index.html" class="btn-back">← Ana Menüye Dön</a>
+        <h3>📋 Geçmiş Araç Kayıtları</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Görsel</th>
+                    <th>Tarih</th>
+                    <th>Araç / Tür</th>
+                    <th>Tutar</th>
+                    <th>Açıklama</th>
+                    <th id="actionTh">İşlem</th>
+                </tr>
+            </thead>
+            <tbody id="aracTableBody">
+                <tr><td colspan="6">Yükleniyor...</td></tr>
+            </tbody>
+        </table>
     </div>
 
     <script>
@@ -121,143 +130,127 @@
             messagingSenderId: "296913243470",
             appId: "1:296913243470:web:f2a6cfed4196ff44e0221f"
         };
-
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        const currentUser = localStorage.getItem('currentUser') || "";
-        document.getElementById('userTag').innerText = "(" + currentUser + ")";
-        document.getElementById('aracTarih').valueAsDate = new Date();
+        const currentUser = localStorage.getItem('currentUser') || 'Anonim';
+        document.getElementById('userDisplay').innerText = `(${currentUser})`;
 
-        let userPermission = "oku"; // Varsayılan kilitli
-        let uyariAyarlar = {
-            muayene: { gun: 30, saat: 0, dakika: 0 },
-            sigorta: { gun: 30, saat: 0, dakika: 0 },
-            mtv: { gun: 15, saat: 0, dakika: 0 }
-        };
+        // --- ONLINE DURUM & LOGLEMA ---
+        if (currentUser !== 'Anonim') {
+            const connectedRef = db.ref('.info/connected');
+            const userPresenceRef = db.ref('onlineUsersDB/' + currentUser);
 
-        // YETKİ KONTROLÜ
-        db.ref('usersDB/' + currentUser + '/permissions/arac').on('value', (s) => {
-            userPermission = s.val() || "oku";
-            const btn = document.getElementById('btnKaydet');
-            
-            if (userPermission === "yok") {
-                alert("Erişim yetkiniz yok!");
-                window.location.replace('index.html');
-            } else if (userPermission === "oku") {
-                document.getElementById('aracFormArea').style.display = 'none';
-                document.getElementById('readOnlyNotice').style.display = 'block';
-                if(btn) btn.disabled = true;
-                document.getElementById('actionHead').style.display = 'none';
-            } else {
-                document.getElementById('aracFormArea').style.display = 'block';
-                document.getElementById('readOnlyNotice').style.display = 'none';
-                if(btn) {
-                    btn.disabled = false;
-                    btn.innerText = "Masrafı / Kaydı Ekle";
-                }
-                document.getElementById('actionHead').style.display = '';
-            }
-            renderAracMasraflari();
-        });
+            connectedRef.on('value', (snap) => {
+                if (snap.val() === true) {
+                    userPresenceRef.onDisconnect().set({
+                        status: 'offline',
+                        lastSeen: new Date().toLocaleString('tr-TR')
+                    });
 
-        db.ref('varsayilanlarDB/uyariAyar').on('value', (s) => {
-            if(s.val()) uyariAyarlar = s.val();
-            aracTarihKontrol();
-        });
-
-        setInterval(aracTarihKontrol, 1000);
-
-        // DİNAMİK LİSTELER
-        let rawAraclar = [];
-        db.ref('araclarDB').on('value', (s) => {
-            rawAraclar = s.val() || [];
-            db.ref('varsayilanlarDB/arac').once('value', (defSnap) => {
-                const defPlaka = defSnap.val();
-                const select = document.getElementById('plakaSelect');
-                select.innerHTML = rawAraclar.map(item => {
-                    const plaka = typeof item === 'object' ? item.plaka : item;
-                    const isDef = plaka === defPlaka ? 'selected' : '';
-                    return `<option value="${plaka}" ${isDef}>${plaka}</option>`;
-                }).join('');
-            });
-            aracTarihKontrol();
-        });
-
-        db.ref('kisilerDB').on('value', (s) => {
-            document.getElementById('kisiSelect').innerHTML = (s.val() || []).map(i => `<option value="${i}">${i}</option>`).join('');
-        });
-
-        db.ref('sezonlarDB').on('value', (s) => {
-            document.getElementById('sezonSelect').innerHTML = (s.val() || []).map(i => `<option value="${i}">${i}</option>`).join('');
-        });
-
-        function aracTarihKontrol() {
-            const box = document.getElementById('aracUyariBox');
-            let uyarılar = [];
-            const simdi = new Date().getTime();
-
-            rawAraclar.forEach(a => {
-                if(typeof a === 'object') {
-                    const hedefler = [
-                        { key: 'muayeneTarihi', etiket: '📋 Muayene', ayar: uyariAyarlar.muayene },
-                        { key: 'sigortaTarihi', etiket: '🛡️ Sigorta', ayar: uyariAyarlar.sigorta },
-                        { key: 'mtvTarihi', etiket: '💳 MTV', ayar: uyariAyarlar.mtv }
-                    ];
-
-                    hedefler.forEach(item => {
-                        if(a[item.key]) {
-                            const hedefZaman = new Date(a[item.key] + "T23:59:59").getTime();
-                            const farkMs = hedefZaman - simdi;
-                            const esikMs = (((item.ayar.gun || 0) * 24 * 60) + ((item.ayar.saat || 0) * 60) + (item.ayar.dakika || 0)) * 60 * 1000;
-
-                            if(farkMs <= esikMs) {
-                                const isExpired = farkMs < 0;
-                                const mutlakMs = Math.abs(farkMs);
-
-                                const d = Math.floor(mutlakMs / (1000 * 60 * 60 * 24));
-                                const h = Math.floor((mutlakMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                                const m = Math.floor((mutlakMs % (1000 * 60 * 60)) / (1000 * 60));
-                                const s = Math.floor((mutlakMs % (1000 * 60)) / 1000);
-
-                                const zamanStr = `${d}g ${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
-
-                                uyarılar.push(`⚠️ <b>${a.plaka}</b> - ${item.etiket}: ${a[item.key]} (${isExpired ? '<span style="color:red">SÜRE GEÇTİ!</span>' : 'Kalan: ' + zamanStr})`);
-                            }
-                        }
+                    userPresenceRef.set({
+                        status: 'online',
+                        lastSeen: new Date().toLocaleString('tr-TR'),
+                        device: /Android|iPhone|iPad/i.test(navigator.userAgent) ? '📱 Mobil' : '💻 Bilgisayar'
                     });
                 }
             });
+        }
 
-            if(uyarılar.length > 0) {
-                box.style.display = 'block';
-                box.innerHTML = "<b>🔔 Canlı Araç Uyarı Süreleri:</b><br>" + uyarılar.join('<br>');
+        function logEkle(islemAdi, detay = '') {
+            db.ref('logsDB').push({
+                kullanici: currentUser,
+                islem: islemAdi,
+                detay: detay,
+                tarih: new Date().toLocaleString('tr-TR'),
+                timestamp: firebase.database.ServerValue.TIMESTAMP
+            });
+        }
+
+        logEkle("Sayfa Ziyareti", "Araç & Yol Masrafları Sayfası");
+
+        document.getElementById('aracTarih').valueAsDate = new Date();
+
+        let userPermission = "tam";
+        let tumAracMasraflari = {};
+
+        if (currentUser) {
+            db.ref('usersDB/' + currentUser).on('value', (snapshot) => {
+                const userData = snapshot.val();
+                if (userData && userData.permissions) {
+                    userPermission = userData.permissions.arac || "tam";
+                    yetkiUygula();
+                }
+            });
+        }
+
+        function yetkiUygula() {
+            if (userPermission === "oku") {
+                document.getElementById('formSection').style.display = "none";
+                document.getElementById('readOnlyBanner').style.display = "block";
+                document.getElementById('actionTh').style.display = "none";
             } else {
-                box.style.display = 'none';
+                document.getElementById('formSection').style.display = "block";
+                document.getElementById('readOnlyBanner').style.display = "none";
+                document.getElementById('actionTh').style.display = "table-cell";
             }
         }
 
-        // MASRAF LİSTELEME
-        let aracData = {};
-        db.ref('aracMasraflariDB').on('value', (s) => {
-            aracData = s.val() || {};
-            renderAracMasraflari();
+        db.ref('varsayilanlarDB').on('value', (snapshot) => {
+            const defs = snapshot.val() || {};
+            
+            db.ref('araclarDB').on('value', (snap) => {
+                const list = snap.val() || [];
+                const select = document.getElementById('plakaSelect');
+                select.innerHTML = "";
+                const arr = Array.isArray(list) ? list : Object.values(list);
+                arr.forEach(a => select.innerHTML += `<option value="${a}">${a}</option>`);
+                if (defs.arac) select.value = defs.arac;
+            });
+
+            db.ref('kisilerDB').on('value', (snap) => {
+                const list = snap.val() || [];
+                const select = document.getElementById('kisiSelect');
+                select.innerHTML = "";
+                const arr = Array.isArray(list) ? list : Object.values(list);
+                arr.forEach(k => select.innerHTML += `<option value="${k}">${k}</option>`);
+                if (defs.kisi) select.value = defs.kisi;
+            });
+
+            db.ref('sezonlarDB').on('value', (snap) => {
+                const list = snap.val() || ["2026"];
+                const select = document.getElementById('sezonSelect');
+                select.innerHTML = "";
+                const arr = Array.isArray(list) ? list : Object.values(list);
+                arr.forEach(s => select.innerHTML += `<option value="${s}">${s}</option>`);
+                if (defs.sezon) select.value = defs.sezon;
+            });
         });
 
-        function renderAracMasraflari() {
+        db.ref('aracMasraflariDB').on('value', (snapshot) => {
+            tumAracMasraflari = snapshot.val() || {};
+            verileriCiz();
+        });
+
+        function verileriCiz() {
             const tbody = document.getElementById('aracTableBody');
             tbody.innerHTML = "";
 
-            for (const [key, item] of Object.entries(aracData)) {
-                const fotoTag = item.foto ? `<a href="${item.foto}" target="_blank"><img src="${item.foto}" class="img-thumb"></a>` : '-';
+            if (Object.keys(tumAracMasraflari).length === 0) {
+                tbody.innerHTML = "<tr><td colspan='6'>Kayıtlı araç masrafı bulunamadı.</td></tr>";
+                return;
+            }
+
+            const keys = Object.keys(tumAracMasraflari).reverse();
+            for (let key of keys) {
+                const item = tumAracMasraflari[key];
+                const imgHtml = item.foto ? `<img src="${item.foto}" class="img-thumb" onclick="window.open('${item.foto}')">` : '-';
                 tbody.innerHTML += `
                     <tr>
+                        <td>${imgHtml}</td>
                         <td>${item.tarih}</td>
-                        <td><b>${item.plaka}</b></td>
-                        <td>${item.tur}</td>
-                        <td>${item.odeyen}</td>
-                        <td><b>${parseFloat(item.tutar).toFixed(2)} ₺</b></td>
-                        <td>${fotoTag}</td>
+                        <td><b>${item.plaka}</b><br><span style="font-size:0.75rem; color:#718096;">${item.tur}</span></td>
+                        <td><b>${item.tutar} TL</b>${item.km ? `<br><span style="font-size:0.75rem; color:#718096;">${item.km} KM</span>` : ''}</td>
                         <td>${item.aciklama || '-'}</td>
                         ${userPermission !== "oku" ? `<td><button class="btn-del" onclick="aracMasrafSil('${key}')">Sil</button></td>` : ''}
                     </tr>`;
@@ -265,38 +258,42 @@
         }
 
         async function aracMasrafKaydet() {
-            if (userPermission === "oku") {
-                alert("Salt okunur yetkisine sahipsiniz, yeni kayıt ekleyemezsiniz!");
-                return;
-            }
+            if (userPermission === "oku") return;
 
-            const tutar = document.getElementById('aracTutar').value;
-            if (!tutar || tutar <= 0) return alert("Lütfen geçerli bir tutar girin!");
+            const tutar = parseFloat(document.getElementById('aracTutar').value) || 0;
+            const plaka = document.getElementById('plakaSelect').value;
+            const tur = document.getElementById('turSelect').value;
 
-            const fileInput = document.getElementById('aracFotoInput');
+            if (tutar <= 0) return alert("Lütfen geçerli bir tutar girin!");
+
+            const fileInput = document.getElementById('aracFoto');
             let fotoBase64 = "";
+
             if (fileInput.files.length > 0) {
                 fotoBase64 = await base64Dönüştür(fileInput.files[0]);
             }
 
             db.ref('aracMasraflariDB').push({
-                plaka: document.getElementById('plakaSelect').value,
-                tur: document.getElementById('turSelect').value,
+                plaka: plaka,
+                tur: tur,
                 odeyen: document.getElementById('kisiSelect').value,
                 sezon: document.getElementById('sezonSelect').value,
-                tutar: parseFloat(tutar),
+                tutar: tutar,
                 km: document.getElementById('aracKm').value,
                 tarih: document.getElementById('aracTarih').value,
                 aciklama: document.getElementById('aracAciklama').value,
                 foto: fotoBase64,
                 ekleyen: currentUser
+            }, (error) => {
+                if (!error) {
+                    logEkle("Araç Masrafı Eklendi", `${tutar.toFixed(2)} TL - ${plaka} (${tur})`);
+                    document.getElementById('aracTutar').value = "";
+                    document.getElementById('aracKm').value = "";
+                    document.getElementById('aracAciklama').value = "";
+                    fileInput.value = "";
+                    alert("Kayıt başarıyla eklendi.");
+                }
             });
-
-            document.getElementById('aracTutar').value = "";
-            document.getElementById('aracKm').value = "";
-            document.getElementById('aracAciklama').value = "";
-            fileInput.value = "";
-            alert("Kayıt başarıyla eklendi.");
         }
 
         function base64Dönüştür(file) {
@@ -311,7 +308,10 @@
         function aracMasrafSil(key) {
             if (userPermission === "oku") return alert("Yetkiniz yok!");
             if (confirm("Silmek istediğinize emin misiniz?")) {
-                db.ref('aracMasraflariDB/' + key).remove();
+                const silinen = tumAracMasraflari[key];
+                db.ref('aracMasraflariDB/' + key).remove(() => {
+                    logEkle("Araç Masrafı Silindi", silinen ? `${silinen.tutar || 0} TL - ${silinen.plaka || ''} (${silinen.tur || ''})` : `ID: ${key}`);
+                });
             }
         }
     </script>
