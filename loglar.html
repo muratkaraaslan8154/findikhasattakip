@@ -133,7 +133,44 @@
         }
         const db = firebase.database();
 
-        // 🟢 Online Kullanıcıları ve Akıllı Zaman Aşımı Kontrolü
+        // 🎯 1. BAKIŞTA KENDİ CANLILIK (PRESENCE) TAKİBİNİ BAŞLAT
+        let serverTimeOffset = 0;
+        db.ref('.info/serverTimeOffset').on('value', snap => {
+            serverTimeOffset = snap.val() || 0;
+        });
+
+        if (currentUser) {
+            const connectedRef = db.ref('.info/connected');
+            const userPresenceRef = db.ref('onlineUsersDB/' + currentUser);
+
+            connectedRef.on('value', (snap) => {
+                if (snap.val() === true) {
+                    userPresenceRef.onDisconnect().update({
+                        status: 'offline',
+                        lastSeen: new Date().toLocaleString('tr-TR'),
+                        lastSeenTimestamp: firebase.database.ServerValue.TIMESTAMP
+                    });
+
+                    userPresenceRef.update({
+                        status: 'online',
+                        lastSeen: new Date().toLocaleString('tr-TR'),
+                        lastSeenTimestamp: firebase.database.ServerValue.TIMESTAMP,
+                        device: /Android|iPhone|iPad/i.test(navigator.userAgent) ? '📱 Mobil' : '💻 Bilgisayar'
+                    });
+                }
+            });
+
+            // Her 25 saniyede bir canlılık sinyali gönder
+            setInterval(() => {
+                userPresenceRef.update({
+                    status: 'online',
+                    lastSeen: new Date().toLocaleString('tr-TR'),
+                    lastSeenTimestamp: firebase.database.ServerValue.TIMESTAMP
+                });
+            }, 25000);
+        }
+
+        // 🎯 2. ONLINE KULLANICILARI LİSTELE VE ZAMAN AŞIMI HESAPLA
         db.ref('onlineUsersDB').on('value', (snapshot) => {
             const tbody = document.getElementById('onlineUserTable');
             tbody.innerHTML = "";
@@ -143,17 +180,19 @@
                 return;
             }
 
-            const simdi = Date.now();
+            // İstemci ve sunucu saat farkı düzeltilmiş şimdiki zaman
+            const simdi = Date.now() + serverTimeOffset;
 
             snapshot.forEach((childSnap) => {
                 const username = childSnap.key;
                 const data = childSnap.val();
 
-                // Son 2 dakika içinde canlılık sinyali gelmediyse çevrimdışı say
                 let isOnline = data.status === 'online';
+
+                // Son 3 dakikada canlılık sinyali güncellenmediyse pasife çek
                 if (data.lastSeenTimestamp) {
                     const farkDakika = (simdi - data.lastSeenTimestamp) / (1000 * 60);
-                    if (farkDakika > 2) isOnline = false;
+                    if (farkDakika > 3) isOnline = false;
                 }
 
                 const statusBadge = isOnline 
