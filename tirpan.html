@@ -12,7 +12,7 @@
 
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
-        body { font-family: 'Roboto', sans-serif; background-color: #f4f6f9; padding: 1rem; display: flex; flex-direction: column; align-items: center; }
+        body { font-family: 'Roboto', sans-serif; background-color: #f4f6f9; padding: 1rem; display: flex; flex-direction: column; align-items: center; margin:0; }
         .container { width: 100%; max-width: 600px; background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
         .header-title { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #dd6b20; padding-bottom: 10px; margin-bottom: 15px; }
         h2 { color: #dd6b20; margin: 0; font-size: 1.3rem; }
@@ -147,7 +147,6 @@
         const currentUser = localStorage.getItem('currentUser') || 'Anonim';
         document.getElementById('userDisplay').innerText = `Kullanıcı: ${currentUser}`;
 
-        // --- ONLINE DURUM & LOGLEMA ---
         if (currentUser !== 'Anonim') {
             const connectedRef = db.ref('.info/connected');
             const userPresenceRef = db.ref('onlineUsersDB/' + currentUser);
