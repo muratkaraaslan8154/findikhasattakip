@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Kullanıcı & İşlem Log Paneli</title>
+
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+
+    <script>
+        const ADMIN_KULLANICI = "murat";
+        if (localStorage.getItem('isLoggedIn') !== 'true') window.location.replace('giris.html');
+        if (localStorage.getItem('currentUser') !== ADMIN_KULLANICI) {
+            alert("Bu sayfaya sadece yönetici erişebilir!");
+            window.location.replace('index.html');
+        }
+    </script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
+        body { font-family: 'Roboto', sans-serif; background-color: #f4f6f9; padding: 1.5rem 1rem; display: flex; flex-direction: column; align-items: center; margin: 0; }
+        .container { width: 100%; max-width: 1000px; }
+        
+        .card { background: white; border-radius: 12px; padding: 1.2rem; margin-bottom: 1.5rem; box-shadow: 0 4px 10px rgba(0,0,0,0.05); overflow-x: auto; }
+        h2 { margin-top: 0; color: #2d3748; font-size: 1.2rem; border-bottom: 2px solid #3182ce; padding-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; min-width: 600px; }
+        th, td { text-align: left; padding: 10px; border-bottom: 1px solid #e2e8f0; font-size: 0.85rem; }
+        th { background-color: #edf2f7; color: #4a5568; }
+        
+        .badge-online { background: #c6f6d5; color: #22543d; padding: 4px 8px; border-radius: 12px; font-weight: bold; font-size: 0.75rem; }
+        .badge-offline { background: #fed7d7; color: #742a2a; padding: 4px 8px; border-radius: 12px; font-weight: bold; font-size: 0.75rem; }
+        .badge-alert { background: #fff5f5; color: #e53e3e; border: 1px solid #feb2b2; padding: 3px 8px; border-radius: 6px; font-weight: bold; font-size: 0.75rem; }
+        .badge-normal { background: #f0fff4; color: #27ae60; border: 1px solid #c6f6d5; padding: 3px 8px; border-radius: 6px; font-weight: bold; font-size: 0.75rem; }
+
+        .btn-back { background: #edf2f7; border: none; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-weight: bold; margin-bottom: 1rem; }
+        .btn-clear { background: #e53e3e; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; }
+        .btn-detail { background: #3182ce; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.75rem; font-weight: bold; }
+        .btn-detail:hover { background: #2b6cb0; }
+
+        /* Modal Pencere Stilleri */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: white; border-radius: 12px; padding: 1.5rem; width: 90%; max-width: 700px; max-height: 80vh; overflow-y: auto; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; margin-bottom: 15px; }
+        .modal-header h3 { margin: 0; color: #2b6cb0; }
+        .close-modal { cursor: pointer; font-size: 1.4rem; font-weight: bold; color: #718096; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <button class="btn-back" onclick="window.location.href='index.html'">⬅️ Ana Menüye Dön</button>
+
+        <div class="card">
+            <h2>👥 Kullanıcı Durumu & Konum Takibi (Canlı)</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Kullanıcı</th>
+                        <th>Durum</th>
+                        <th>Cihaz</th>
+                        <th>IP Adresi</th>
+                        <th>Lokasyon (İl)</th>
+                        <th>Son Görülme / İşlem</th>
+                        <th>Konum Durumu</th>
+                        <th>Geçmiş</th>
+                    </tr>
+                </thead>
+                <tbody id="onlineUserTable">
+                    <tr><td colspan="8">Yükleniyor...</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="card">
+            <h2>
+                📜 Sistem Hareket & İşlem Günlüğü
+                <button class="btn-clear" onclick="loglariTemizle()">Logları Temizle</button>
+            </h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Tarih / Saat</th>
+                        <th>Kullanıcı</th>
+                        <th>IP / Şehir</th>
+                        <th>Yapılan İşlem</th>
+                        <th>Detay</th>
+                    </tr>
+                </thead>
+                <tbody id="logTable">
+                    <tr><td colspan="5">Yükleniyor...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="historyModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">Giriş Geçmişi</h3>
+                <span class="close-modal" onclick="modalKapat()">✕</span>
+            </div>
+            <div id="modalBody">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Tarih</th>
+                            <th>Saat</th>
+                            <th>IP Adresi</th>
+                            <th>Şehir / Lokasyon</th>
+                            <th>Durum</th>
+                        </tr>
+                    </thead>
+                    <tbody id="historyTable">
+                        <tr><td colspan="5">Yükleniyor...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyApN7vhnM30cQ1RdAsXiUS8AY08G2QklYY",
+            authDomain: "findikhasattakip.firebaseapp.com",
+            databaseURL: "https://findikhasattakip-default-rtdb.firebaseio.com",
+            projectId: "findikhasattakip",
+            storageBucket: "findikhasattakip.firebasestorage.app",
+            messagingSenderId: "296913243470",
+            appId: "1:296913243470:web:f2a6cfed4196ff44e0221f"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        // 🟢 Online Kullanıcıları ve IP/Şehir Bilgilerini Canlı Dinle
+        db.ref('onlineUsersDB').on('value', (snapshot) => {
+            const users = snapshot.val() || {};
+            const tbody = document.getElementById('onlineUserTable');
+            tbody.innerHTML = "";
+
+            if (Object.keys(users).length === 0) {
+                tbody.innerHTML = "<tr><td colspan='8'>Aktif kullanıcı bulunmuyor.</td></tr>";
+                return;
+            }
+
+            for (const [username, data] of Object.entries(users)) {
+                const isOnline = data.status === 'online';
+                const statusBadge = isOnline 
+                    ? `<span class="badge-online">🟢 Çevrimiçi</span>` 
+                    : `<span class="badge-offline">🔴 Çevrimdışı</span>`;
+
+                const konumBadge = data.farkliLokasyon 
+                    ? `<span class="badge-alert">⚠️ Farklı Lokasyon</span>` 
+                    : `<span class="badge-normal">✅ Normal</span>`;
+
+                tbody.innerHTML += `
+                    <tr>
+                        <td><b>${username}</b></td>
+                        <td>${statusBadge}</td>
+                        <td>${data.device || 'Bilinmiyor'}</td>
+                        <td>${data.ip || 'Bilinmiyor'}</td>
+                        <td>${data.sehir || 'Bilinmiyor'}</td>
+                        <td>${data.lastSeen || '-'}</td>
+                        <td>${konumBadge}</td>
+                        <td>
+                            <button class="btn-detail" onclick="kullaniciGirisGecmisiGetir('${username}')">
+                                📅 Girişler
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }
+        });
+
+        // 📜 İşlem Loglarını Canlı Dinle (Son 50 İşlem)
+        db.ref('logsDB').orderByChild('timestamp').limitToLast(50).on('value', (snapshot) => {
+            const logs = snapshot.val() || {};
+            const tbody = document.getElementById('logTable');
+            tbody.innerHTML = "";
+
+            const logList = Object.values(logs).reverse();
+
+            if (logList.length === 0) {
+                tbody.innerHTML = "<tr><td colspan='5'>Henüz işlem kaydı yok.</td></tr>";
+                return;
+            }
+
+            logList.forEach(log => {
+                const isFarkli = log.farkliLokasyon || (log.islem && log.islem.includes('Farklı Lokasyon'));
+                const islemStili = isFarkli 
+                    ? `<span style="color:#e53e3e; font-weight:bold;">${log.islem}</span>` 
+                    : `<span style="color:#2b6cb0; font-weight:500;">${log.islem}</span>`;
+
+                const ipSehirText = (log.ip || log.sehir) 
+                    ? `${log.ip || ''} (${log.sehir || ''})` 
+                    : '-';
+
+                tbody.innerHTML += `
+                    <tr>
+                        <td style="color:#718096; font-size:0.8rem;">${log.tarih || '-'}</td>
+                        <td><b>${log.kullanici || 'Anonim'}</b></td>
+                        <td><small style="color:#4a5568;">${ipSehirText}</small></td>
+                        <td>${islemStili}</td>
+                        <td style="color:#4a5568;">${log.detay || '-'}</td>
+                    </tr>
+                `;
+            });
+        });
+
+        // 📅 Kullanıcının Gün Gün Giriş Geçmişini Döküm Yapan Fonksiyon
+        function kullaniciGirisGecmisiGetir(username) {
+            document.getElementById('modalTitle').innerText = `📅 ${username.toUpperCase()} - Giriş & Lokasyon Geçmişi`;
+            const historyTable = document.getElementById('historyTable');
+            historyTable.innerHTML = "<tr><td colspan='5'>Yükleniyor...</td></tr>";
+            document.getElementById('historyModal').style.display = 'flex';
+
+            db.ref('loginHistoryDB/' + username).once('value', (snapshot) => {
+                const history = snapshot.val() || {};
+                historyTable.innerHTML = "";
+
+                const keys = Object.keys(history).reverse();
+
+                if (keys.length === 0) {
+                    historyTable.innerHTML = "<tr><td colspan='5' style='text-align:center;'>Geçmiş giriş kaydı bulunamadı.</td></tr>";
+                    return;
+                }
+
+                keys.forEach(k => {
+                    const item = history[k];
+                    const durumBadge = item.farkliLokasyon 
+                        ? `<span class="badge-alert">⚠️ Farklı Konum</span>` 
+                        : `<span class="badge-normal">✅ Normal</span>`;
+
+                    historyTable.innerHTML += `
+                        <tr>
+                            <td><b>${item.tarih || '-'}</b></td>
+                            <td>${item.saat || '-'}</td>
+                            <td>${item.ip || 'Bilinmiyor'}</td>
+                            <td>${item.sehir || 'Bilinmiyor'}</td>
+                            <td>${durumBadge}</td>
+                        </tr>
+                    `;
+                });
+            });
+        }
+
+        function modalKapat() {
+            document.getElementById('historyModal').style.display = 'none';
+        }
+
+        function loglariTemizle() {
+            if (confirm("Tüm işlem geçmişini silmek istediğinize emin misiniz?")) {
+                db.ref('logsDB').remove();
+            }
+        }
+    </script>
+</body>
+</html>
