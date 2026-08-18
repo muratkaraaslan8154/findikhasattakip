@@ -29,7 +29,7 @@
         .section-box.red { border-left-color: #e53e3e; }
         .form-group { margin-bottom: 12px; }
         label { display: block; font-size: 0.85rem; font-weight: bold; margin-bottom: 5px; color: #4a5568;}
-        input, select { width: 100%; padding: 9px; border: 1px solid #cbd5e0; border-radius: 6px; box-sizing: border-box; font-size: 0.9rem; margin-bottom: 6px; }
+        input, select { width: 100%; padding: 9px; border: 1px solid #cbd5e0; border-radius: 6px; box-sizing: border-box; font-size: 0.9rem; margin-bottom: 6px; text-align: center; }
         .btn { background: #805ad5; color: white; width: 100%; padding: 10px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; transition: background 0.2s;}
         .btn:hover { opacity: 0.9; }
         table { width: 100%; border-collapse: collapse; margin-top: 15px; }
@@ -44,8 +44,20 @@
         .btn-back { display: block; text-align: center; margin-top: 20px; color: #718096; text-decoration: none; font-weight: 500;}
         .loading { color: #e53e3e; font-size: 0.8rem; text-align: center; margin-bottom: 10px; }
         .perm-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px; background: #edf2f7; padding: 10px; border-radius: 6px; margin-top: 5px; }
-        .time-inputs { display: flex; gap: 6px; }
-        .time-inputs input { text-align: center; }
+        
+        /* CARD & SAYAÇ STİLLERİ */
+        .card-sub { background: #ffffff; border-radius: 8px; padding: 1rem; margin-bottom: 1rem; border: 1px solid #e2e8f0; }
+        .card-muayene { border-left: 5px solid #dd6b20; background: #fffaf0; }
+        .card-sigorta { border-left: 5px solid #3182ce; background: #ebf8ff; }
+        .card-mtv { border-left: 5px solid #319795; background: #e6fffa; }
+        .card-title-sub { font-size: 0.95rem; font-weight: bold; margin-bottom: 0.8rem; display: flex; align-items: center; gap: 6px; }
+        .card-muayene .card-title-sub { color: #c05621; }
+        .card-sigorta .card-title-sub { color: #2b6cb0; }
+        .card-mtv .card-title-sub { color: #2c7a7b; }
+        .input-row { display: flex; gap: 10px; margin-bottom: 8px; }
+        .input-group { flex: 1; display: flex; flex-direction: column; }
+        .live-timer-box { display: none; margin-top: 10px; padding: 8px 12px; background: #ffffff; border-radius: 6px; border: 1px dashed #cbd5e0; text-align: center; font-size: 0.85rem; box-shadow: 0 1px 3px rgba(0,0,0,0.02); }
+        .timer-val { font-family: 'Courier New', Courier, monospace; font-weight: bold; font-size: 0.95rem; color: #2d3748; margin-top: 2px; }
     </style>
 </head>
 <body>
@@ -53,66 +65,11 @@
         <h2>⚙️ Firebase Sistem Yönetimi <span style="font-size: 0.85rem; font-weight: normal; color: #718096;" id="adminLabel"></span></h2>
         <div id="statusLabel" class="loading">Firebase Bağlantısı Yapılıyor...</div>
 
-        <!-- AYRI UYARI SÜRELERİ (GÜN / SAAT / DAKİKA) -->
-        <div class="section-box red">
-            <h3 style="margin-top:0; font-size:1rem; color:#c53030;">🔔 Araç Uyarı Süre Ayarları (Gün / Saat / Dakika)</h3>
-
-            <!-- CANLI GERİ SAYIM PANOLARI -->
-            <div style="margin-bottom: 15px; background: #ffffff; padding: 12px; border-radius: 8px; border: 1px solid #feb2b2; box-shadow: 0 2px 4px rgba(0,0,0,0.03);">
-                <h4 style="margin: 0 0 10px 0; color: #2d3748; font-size: 0.88rem; display: flex; align-items: center; gap: 6px;">
-                    ⏳ En Yakın Araç Son Tarih Geri Sayımları (Canlı)
-                </h4>
-                <div id="countdownBox" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px;">
-                    <div style="background:#f7fafc; padding:10px; border-radius:6px; border-left:4px solid #dd6b20;">
-                        <span style="font-size:0.75rem; color:#718096; font-weight:bold;">📋 EN YAKIN MUAYENE</span>
-                        <div id="cdMuayene" style="font-weight:bold; color:#2d3748; margin-top:4px;">Hesaplanıyor...</div>
-                    </div>
-                    <div style="background:#f7fafc; padding:10px; border-radius:6px; border-left:4px solid #3182ce;">
-                        <span style="font-size:0.75rem; color:#718096; font-weight:bold;">🛡️ EN YAKIN SİGORTA</span>
-                        <div id="cdSigorta" style="font-weight:bold; color:#2d3748; margin-top:4px;">Hesaplanıyor...</div>
-                    </div>
-                    <div style="background:#f7fafc; padding:10px; border-radius:6px; border-left:4px solid #e53e3e;">
-                        <span style="font-size:0.75rem; color:#718096; font-weight:bold;">💳 EN YAKIN MTV</span>
-                        <div id="cdMtv" style="font-weight:bold; color:#2d3748; margin-top:4px;">Hesaplanıyor...</div>
-                    </div>
-                </div>
-            </div>
-            
-            <div style="margin-bottom:12px; border-bottom:1px solid #feb2b2; padding-bottom:8px;">
-                <label>📋 Muayene Uyarı Eşiği:</label>
-                <div class="time-inputs">
-                    <input type="number" id="mGun" placeholder="Gün" value="30" min="0">
-                    <input type="number" id="mSaat" placeholder="Saat" value="0" min="0" max="23">
-                    <input type="number" id="mDakika" placeholder="Dakika" value="0" min="0" max="59">
-                </div>
-            </div>
-
-            <div style="margin-bottom:12px; border-bottom:1px solid #feb2b2; padding-bottom:8px;">
-                <label>🛡️ Sigorta Uyarı Eşiği:</label>
-                <div class="time-inputs">
-                    <input type="number" id="sGun" placeholder="Gün" value="30" min="0">
-                    <input type="number" id="sSaat" placeholder="Saat" value="0" min="0" max="23">
-                    <input type="number" id="sDakika" placeholder="Dakika" value="0" min="0" max="59">
-                </div>
-            </div>
-
-            <div style="margin-bottom:12px;">
-                <label>💳 MTV Uyarı Eşiği:</label>
-                <div class="time-inputs">
-                    <input type="number" id="mtvGun" placeholder="Gün" value="15" min="0">
-                    <input type="number" id="mtvSaat" placeholder="Saat" value="0" min="0" max="23">
-                    <input type="number" id="mtvDakika" placeholder="Dakika" value="0" min="0" max="59">
-                </div>
-            </div>
-
-            <button class="btn" style="background:#e53e3e;" onclick="uyariGunuKaydet()">Tüm Uyarı Sürelerini Kaydet</button>
-        </div>
-
-        <!-- KULLANICI & YETKİ YÖNETİMİ -->
+        <!-- KULLANICI & YETKİ YÖNETİMİ (ÜSTE ALINDI) -->
         <div class="section-box">
             <h3 style="margin-top: 0; font-size: 1rem; color: #2d3748;" id="formTitle">👤 Yeni Kullanıcı & Yetki Ekle</h3>
-            <div class="form-group"><label>Kullanıcı Adı:</label><input type="text" id="newUsername" placeholder="Örn: mert"></div>
-            <div class="form-group"><label>Giriş PIN Kodu:</label><input type="text" id="newPin" placeholder="Örn: 1234"></div>
+            <div class="form-group"><label>Kullanıcı Adı:</label><input type="text" id="newUsername" placeholder="Örn: mert" style="text-align:left;"></div>
+            <div class="form-group"><label>Giriş PIN Kodu:</label><input type="text" id="newPin" placeholder="Örn: 1234" style="text-align:left;"></div>
             
             <div style="display: flex; gap: 10px;">
                 <div class="form-group" style="flex:1;">
@@ -156,10 +113,110 @@
             </div>
         </div>
 
+        <!-- UYARI SÜRELERİ VE CANLI GERİ SAYIMLAR (ALTA ALINDI) -->
+        <div class="section-box red">
+            <h3 style="margin-top:0; font-size:1rem; color:#c53030;">🔔 Araç Uyarı Süre Ayarları & Hedef Tarihler</h3>
+
+            <!-- MUAYENE KARTI -->
+            <div class="card-sub card-muayene">
+                <div class="card-title-sub">📋 Muayene Hedef Tarihi ve Uyarı Eşiği:</div>
+                <div class="input-row">
+                    <div class="input-group" style="flex: 2;">
+                        <input type="date" id="m_tarih">
+                    </div>
+                    <div class="input-group" style="flex: 1;">
+                        <input type="time" id="m_zaman" value="00:00">
+                    </div>
+                </div>
+                <div class="input-row">
+                    <div class="input-group">
+                        <label>Gün Eşiği</label>
+                        <input type="number" id="m_gun" value="0" min="0">
+                    </div>
+                    <div class="input-group">
+                        <label>Saat Eşiği</label>
+                        <input type="number" id="m_saat" value="0" min="0" max="23">
+                    </div>
+                    <div class="input-group">
+                        <label>Dakika Eşiği</label>
+                        <input type="number" id="m_dakika" value="0" min="0" max="59">
+                    </div>
+                </div>
+                <div id="box-muayene" class="live-timer-box">
+                    <div>⏱️ <b>Muayene Kalan Süre:</b></div>
+                    <div id="timer-muayene" class="timer-val">-- gün --:--:--</div>
+                </div>
+            </div>
+
+            <!-- SİGORTA KARTI -->
+            <div class="card-sub card-sigorta">
+                <div class="card-title-sub">🛡️ Sigorta Hedef Tarihi ve Uyarı Eşiği:</div>
+                <div class="input-row">
+                    <div class="input-group" style="flex: 2;">
+                        <input type="date" id="s_tarih">
+                    </div>
+                    <div class="input-group" style="flex: 1;">
+                        <input type="time" id="s_zaman" value="00:00">
+                    </div>
+                </div>
+                <div class="input-row">
+                    <div class="input-group">
+                        <label>Gün Eşiği</label>
+                        <input type="number" id="s_gun" value="0" min="0">
+                    </div>
+                    <div class="input-group">
+                        <label>Saat Eşiği</label>
+                        <input type="number" id="s_saat" value="0" min="0" max="23">
+                    </div>
+                    <div class="input-group">
+                        <label>Dakika Eşiği</label>
+                        <input type="number" id="s_dakika" value="0" min="0" max="59">
+                    </div>
+                </div>
+                <div id="box-sigorta" class="live-timer-box">
+                    <div>⏱️ <b>Sigorta Kalan Süre:</b></div>
+                    <div id="timer-sigorta" class="timer-val">-- gün --:--:--</div>
+                </div>
+            </div>
+
+            <!-- MTV KARTI -->
+            <div class="card-sub card-mtv">
+                <div class="card-title-sub">💳 MTV Hedef Tarihi ve Uyarı Eşiği:</div>
+                <div class="input-row">
+                    <div class="input-group" style="flex: 2;">
+                        <input type="date" id="mtv_tarih">
+                    </div>
+                    <div class="input-group" style="flex: 1;">
+                        <input type="time" id="mtv_zaman" value="00:00">
+                    </div>
+                </div>
+                <div class="input-row">
+                    <div class="input-group">
+                        <label>Gün Eşiği</label>
+                        <input type="number" id="mtv_gun" value="0" min="0">
+                    </div>
+                    <div class="input-group">
+                        <label>Saat Eşiği</label>
+                        <input type="number" id="mtv_saat" value="0" min="0" max="23">
+                    </div>
+                    <div class="input-group">
+                        <label>Dakika Eşiği</label>
+                        <input type="number" id="mtv_dakika" value="0" min="0" max="59">
+                    </div>
+                </div>
+                <div id="box-mtv" class="live-timer-box">
+                    <div>⏱️ <b>MTV Kalan Süre:</b></div>
+                    <div id="timer-mtv" class="timer-val">-- gün --:--:--</div>
+                </div>
+            </div>
+
+            <button class="btn" style="background:#e53e3e;" onclick="ayarlariKaydet()">Tüm Uyarı Eşiklerini Kaydet</button>
+        </div>
+
         <!-- ARAÇ / PLAKA VE VARSAYILAN ARAÇ SEÇİMİ -->
         <div class="section-box blue">
             <h3 style="margin-top:0; font-size:1rem; color:#2b6cb0;">🚘 Araç, Resmi Tarihler & Belge Fotoğrafı</h3>
-            <div class="form-group"><label>Plaka:</label><input type="text" id="yeniPlaka" placeholder="Örn: 81 AF 123"></div>
+            <div class="form-group"><label>Plaka:</label><input type="text" id="yeniPlaka" placeholder="Örn: 81 AF 123" style="text-align:left;"></div>
             <div style="display:flex; gap:10px;">
                 <div class="form-group" style="flex:1;"><label>Muayene Tarihi:</label><input type="date" id="yeniMuayeneTarihi"></div>
                 <div class="form-group" style="flex:1;"><label>Sigorta Bitiş Tarihi:</label><input type="date" id="yeniSigortaTarihi"></div>
@@ -182,15 +239,15 @@
                 <option value="🔥 Doğalgaz">🔥 Doğalgaz</option>
                 <option value="🌐 İnternet / TV">🌐 İnternet / TV</option>
             </select>
-            <input type="text" id="yeniAboneNo" placeholder="Abone No">
-            <input type="text" id="yeniAboneEtiket" placeholder="Açıklama">
+            <input type="text" id="yeniAboneNo" placeholder="Abone No" style="text-align:left;">
+            <input type="text" id="yeniAboneEtiket" placeholder="Açıklama" style="text-align:left;">
             <button class="btn" style="background:#3182ce;" onclick="aboneEkle()">Abonelik Ekle</button>
             <ul class="list-group" id="aboneListesi"></ul>
         </div>
 
         <div class="section-box green">
             <label>💰 Ödeyen Kişiler</label>
-            <input type="text" id="yeniKisi" placeholder="Kişi Adı">
+            <input type="text" id="yeniKisi" placeholder="Kişi Adı" style="text-align:left;">
             <button class="btn" style="background:#38a169;" onclick="kisiEkle()">Kişi Ekle</button>
             <ul class="list-group" id="kisiListesi"></ul>
         </div>
@@ -240,21 +297,10 @@
             localVarsayilanlar = s.val() || {};
             if(localVarsayilanlar.uyariAyar) {
                 const u = localVarsayilanlar.uyariAyar;
-                if(u.muayene) {
-                    document.getElementById('mGun').value = u.muayene.gun ?? 30;
-                    document.getElementById('mSaat').value = u.muayene.saat ?? 0;
-                    document.getElementById('mDakika').value = u.muayene.dakika ?? 0;
-                }
-                if(u.sigorta) {
-                    document.getElementById('sGun').value = u.sigorta.gun ?? 30;
-                    document.getElementById('sSaat').value = u.sigorta.saat ?? 0;
-                    document.getElementById('sDakika').value = u.sigorta.dakika ?? 0;
-                }
-                if(u.mtv) {
-                    document.getElementById('mtvGun').value = u.mtv.gun ?? 15;
-                    document.getElementById('mtvSaat').value = u.mtv.saat ?? 0;
-                    document.getElementById('mtvDakika').value = u.mtv.dakika ?? 0;
-                }
+                formuDoldur('m', u.muayene);
+                formuDoldur('s', u.sigorta);
+                formuDoldur('mtv', u.mtv);
+                canliSayaclariHesapla();
             }
             renderAraclar(); renderAbonelikler(); renderKisiler(); renderSezonlar();
         });
@@ -265,32 +311,100 @@
         db.ref('kisilerDB').on('value', (s) => { localKisiler = toArray(s.val()); renderKisiler(); });
         db.ref('sezonlarDB').on('value', (s) => { localSezonlar = toArray(s.val()); renderSezonlar(); });
 
+        function formuDoldur(prefix, item) {
+            if (!item) return;
+            document.getElementById(`${prefix}_tarih`).value = item.tarih || "";
+            document.getElementById(`${prefix}_zaman`).value = item.zaman || "00:00";
+            document.getElementById(`${prefix}_gun`).value = item.gun || 0;
+            document.getElementById(`${prefix}_saat`).value = item.saat || 0;
+            document.getElementById(`${prefix}_dakika`).value = item.dakika || 0;
+        }
+
         function varsayilanYap(kategori, deger) { 
             db.ref(`varsayilanlarDB/${kategori}`).set(deger); 
             alert(`Varsayılan ${kategori} "${deger}" olarak ayarlandı.`);
         }
 
-        function uyariGunuKaydet() {
-            const ayarObj = {
+        function ayarlariKaydet() {
+            const kayitData = {
                 muayene: {
-                    gun: parseInt(document.getElementById('mGun').value) || 0,
-                    saat: parseInt(document.getElementById('mSaat').value) || 0,
-                    dakika: parseInt(document.getElementById('mDakika').value) || 0
+                    tarih: document.getElementById('m_tarih').value,
+                    zaman: document.getElementById('m_zaman').value,
+                    gun: parseInt(document.getElementById('m_gun').value) || 0,
+                    saat: parseInt(document.getElementById('m_saat').value) || 0,
+                    dakika: parseInt(document.getElementById('m_dakika').value) || 0
                 },
                 sigorta: {
-                    gun: parseInt(document.getElementById('sGun').value) || 0,
-                    saat: parseInt(document.getElementById('sSaat').value) || 0,
-                    dakika: parseInt(document.getElementById('sDakika').value) || 0
+                    tarih: document.getElementById('s_tarih').value,
+                    zaman: document.getElementById('s_zaman').value,
+                    gun: parseInt(document.getElementById('s_gun').value) || 0,
+                    saat: parseInt(document.getElementById('s_saat').value) || 0,
+                    dakika: parseInt(document.getElementById('s_dakika').value) || 0
                 },
                 mtv: {
-                    gun: parseInt(document.getElementById('mtvGun').value) || 0,
-                    saat: parseInt(document.getElementById('mtvSaat').value) || 0,
-                    dakika: parseInt(document.getElementById('mtvDakika').value) || 0
+                    tarih: document.getElementById('mtv_tarih').value,
+                    zaman: document.getElementById('mtv_zaman').value,
+                    gun: parseInt(document.getElementById('mtv_gun').value) || 0,
+                    saat: parseInt(document.getElementById('mtv_saat').value) || 0,
+                    dakika: parseInt(document.getElementById('mtv_dakika').value) || 0
                 }
             };
-            db.ref('varsayilanlarDB/uyariAyar').set(ayarObj);
-            alert("Süre uyarı ayarları başarıyla güncellendi.");
+
+            db.ref('varsayilanlarDB/uyariAyar').set(kayitData)
+                .then(() => {
+                    alert("✅ Uyarı ayarları ve hedef tarihler başarıyla kaydedildi!");
+                    canliSayaclariHesapla();
+                })
+                .catch((err) => alert("Hata oluştu: " + err.message));
         }
+
+        function canliSayaclariHesapla() {
+            const turler = [
+                { key: 'muayene', boxId: 'box-muayene', timerId: 'timer-muayene' },
+                { key: 'sigorta', boxId: 'box-sigorta', timerId: 'timer-sigorta' },
+                { key: 'mtv', boxId: 'box-mtv', timerId: 'timer-mtv' }
+            ];
+
+            const simdi = new Date().getTime();
+            const uAyar = localVarsayilanlar.uyariAyar || {};
+
+            turler.forEach(item => {
+                const ayar = uAyar[item.key];
+                const boxElem = document.getElementById(item.boxId);
+                const timerElem = document.getElementById(item.timerId);
+
+                if (!boxElem || !timerElem) return;
+
+                if (ayar && ayar.tarih) {
+                    boxElem.style.display = "block";
+
+                    const saatStr = ayar.zaman ? ayar.zaman : "00:00";
+                    const hedefZaman = new Date(`${ayar.tarih}T${saatStr}:00`).getTime();
+
+                    if (isNaN(hedefZaman)) {
+                        timerElem.innerHTML = `<span style="color:#e53e3e;">Tarih Hatalı</span>`;
+                        return;
+                    }
+
+                    const diff = hedefZaman - simdi;
+
+                    if (diff <= 0) {
+                        timerElem.innerHTML = `<span style="color:#e53e3e;">⚠️ SÜRESİ DOLDU!</span>`;
+                    } else {
+                        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                        const hours = String(Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))).padStart(2, '0');
+                        const minutes = String(Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))).padStart(2, '0');
+                        const seconds = String(Math.floor((diff % (1000 * 60)) / 1000)).padStart(2, '0');
+
+                        timerElem.innerHTML = `<b>${days}</b> gün <b>${hours}:${minutes}:${seconds}</b>`;
+                    }
+                } else {
+                    boxElem.style.display = "none";
+                }
+            });
+        }
+
+        setInterval(canliSayaclariHesapla, 1000);
 
         function renderAraclar() {
             const def = localVarsayilanlar.arac;
@@ -524,85 +638,6 @@
             arr.splice(index, 1);
             db.ref(dbPath).set(arr);
         }
-
-        // TAMAMEN YENİLENMİŞ VE HATAYA DAYANIKLI GERİ SAYIM MOTORU
-        function guncelleGeriSayimlar() {
-            const simdi = new Date();
-            const turler = [
-                { id: 'cdMuayene', field: 'muayeneTarihi' },
-                { id: 'cdSigorta', field: 'sigortaTarihi' },
-                { id: 'cdMtv', field: 'mtvTarihi' }
-            ];
-
-            const aracListesi = localAraclar ? Object.values(localAraclar) : [];
-
-            turler.forEach(t => {
-                let enYakinGelecek = null;
-                let enYakinGelecekFark = Infinity;
-                let plakaGelecek = "";
-
-                let enYakinGecmis = null;
-                let enYakinGecmisFark = -Infinity;
-                let plakaGecmis = "";
-
-                aracListesi.forEach(a => {
-                    if (!a || typeof a !== 'object') return;
-                    
-                    const tarihStr = a[t.field];
-                    
-                    if (tarihStr && tarihStr.includes('-')) {
-                        const parts = tarihStr.split('-');
-                        // Güvenli Tarih Çevrimi (Yıl, Ay-1, Gün, Saat, Dakika, Saniye)
-                        const tarihObj = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]), 23, 59, 59);
-                        
-                        if (!isNaN(tarihObj.getTime())) {
-                            const fark = tarihObj.getTime() - simdi.getTime();
-                            
-                            // Gelecekteki bir tarih ise, BİZE EN YAKIN olanı bul (fark pozitif ve en küçük olmalı)
-                            if (fark > 0) {
-                                if (fark < enYakinGelecekFark) {
-                                    enYakinGelecekFark = fark;
-                                    enYakinGelecek = tarihObj;
-                                    plakaGelecek = a.plaka || "Araç";
-                                }
-                            } else {
-                                // Tarihi GEÇMİŞTE ise, BUGÜNE EN YAKIN (en son süresi dolan) olanı bul 
-                                if (fark > enYakinGecmisFark) {
-                                    enYakinGecmisFark = fark;
-                                    enYakinGecmis = tarihObj;
-                                    plakaGecmis = a.plaka || "Araç";
-                                }
-                            }
-                        }
-                    }
-                });
-
-                const el = document.getElementById(t.id);
-                if (!el) return;
-
-                if (enYakinGelecek) {
-                    // Gelecek bir tarih bulundu -> Geri sayım başlat
-                    const farkMs = enYakinGelecekFark;
-                    const gun = Math.floor(farkMs / (1000 * 60 * 60 * 24));
-                    const saat = Math.floor((farkMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                    const dak = Math.floor((farkMs % (1000 * 60 * 60)) / (1000 * 60));
-                    const saniye = Math.floor((farkMs % (1000 * 60)) / 1000);
-                    
-                    el.style.color = "#2d3748";
-                    el.innerHTML = `<span style="font-size:0.8rem; color:#2b6cb0;">${plakaGelecek}</span><br>${gun}g ${saat}s ${dak}d <span style="display:inline-block; width:15px; text-align:left;">${saniye}</span>s`;
-                } else if (enYakinGecmis) {
-                    // Gelecek tarih yok ama eski tarih var -> Süresi doldu yazdır
-                    el.innerHTML = `<span style="font-size:0.8rem; color:#2b6cb0;">${plakaGecmis}</span><br><span style="color:#e53e3e; font-size: 0.9rem;">⚠️ Süresi Doldu</span>`;
-                } else {
-                    // Veritabanında hiçbir tarih bulunamadı
-                    el.innerText = "Tarih Bulunamadı";
-                    el.style.color = "#a0aec0";
-                }
-            });
-        }
-
-        // Geri sayımı saniyede bir kez çalıştır.
-        setInterval(guncelleGeriSayimlar, 1000);
     </script>
 </body>
 </html>
