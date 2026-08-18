@@ -48,6 +48,8 @@
         .badge-tirpan { background: #3182ce; }
         .badge-gubre { background: #38a169; }
         .badge-fatura { background: #e53e3e; }
+        .badge-arac { background: #805ad5; }
+        .badge-bakim { background: #dd6b20; }
 
         .btn-go { background: #4a5568; color: white; text-decoration: none; padding: 4px 10px; border-radius: 4px; font-weight: bold; font-size: 0.75rem; display: inline-block; border: none; }
         .btn-go:hover:not(:disabled) { background: #2d3748; }
@@ -87,6 +89,8 @@
                         <option value="Tırpan">Tırpan</option>
                         <option value="Gübre">Gübre</option>
                         <option value="Faturalar">Faturalar</option>
+                        <option value="Araç">Araç</option>
+                        <option value="Bakım">Bakım</option>
                     </select>
                 </div>
                 <div class="filter-group">
@@ -180,7 +184,6 @@
         let userPermission = "tam";
         const currentUser = localStorage.getItem('currentUser') || "";
 
-        // --- ONLINE TAKİP & LOG FONKSİYONLARI ---
         function logEkle(islemAdi, detay = '') {
             if (!currentUser) return;
             db.ref('logsDB').push({
@@ -211,11 +214,9 @@
                 }
             });
 
-            // Sayfaya girildiği an log kaydı yap
             logEkle("Sayfa Ziyareti", "Raporlama & Analiz Paneli");
         }
 
-        // YETKİ KONTROLÜ
         db.ref('usersDB/' + currentUser + '/permissions').on('value', (s) => {
             const perms = s.val() || {};
             userPermission = perms.rapor || perms.analiz || "tam";
@@ -225,87 +226,68 @@
                 window.location.replace('index.html');
             } else if (userPermission === "oku") {
                 document.getElementById('readOnlyBanner').style.display = 'block';
-                // TÜM FİLTRELERİ KİLİTLE
                 document.querySelectorAll('.filter-card select, .filter-card input, #btnTemizle').forEach(el => {
                     el.disabled = true;
                 });
             }
-            filtreleVeCiz();
+            verileriCek();
         });
 
-        // Veritabanı dinleyicileri
         db.ref('sezonlarDB').on('value', s => {
             const list = s.val() || [];
             const select = document.getElementById('filterSezon');
             select.innerHTML = '<option value="Tüm">Tüm Sezonlar</option>';
-            [...list].sort().reverse().forEach(y => select.innerHTML += `<option value="${y}">${y}</option>`);
+            const arr = Array.isArray(list) ? list : Object.values(list);
+            [...arr].sort().reverse().forEach(y => select.innerHTML += `<option value="${y}">${y}</option>`);
         });
 
         db.ref('kisilerDB').on('value', s => {
             const list = s.val() || [];
             const select = document.getElementById('filterOdeyen');
             select.innerHTML = '<option value="Tüm">Herkes</option>';
-            list.forEach(k => select.innerHTML += `<option value="${k}">${k}</option>`);
+            const arr = Array.isArray(list) ? list : Object.values(list);
+            arr.forEach(k => select.innerHTML += `<option value="${k}">${k}</option>`);
         });
 
-        // İşlemleri Topla
-        db.ref('islemler').on('value', snapshot => {
+        function verileriCek() {
+            let veritabanlari = [
+                { path: 'tirpanMasraflariDB', modul: 'Tırpan', link: 'tirpan.html' },
+                { path: 'gubreMasraflariDB', modul: 'Gübre', link: 'gubre.html' },
+                { path: 'faturaMasraflariDB', modul: 'Faturalar', link: 'faturalar.html' },
+                { path: 'aracMasraflariDB', modul: 'Araç', link: 'arac.html' },
+                { path: 'bakimMasraflariDB', modul: 'Bakım', link: 'bakim.html' }
+            ];
+
+            let yuklenenSayisi = 0;
             tumVeriler = [];
-            const data = snapshot.val() || {};
 
-            // Tırpan Verileri
-            if (data.tirpan) {
-                Object.keys(data.tirpan).forEach(k => {
-                    const c = data.tirpan[k].current || data.tirpan[k];
-                    const tutar = (c.tirpanUcreti || 0) + (c.yolMasrafi || 0);
-                    tumVeriler.push({
-                        modul: "Tırpan",
-                        sezon: c.sezon,
-                        tarih: c.tarih,
-                        aciklama: c.tirpanAciklama || 'Tırpan İşlemi',
-                        odeyen: c.odeyen,
-                        tutar: tutar,
-                        link: "tirpan.html"
+            veritabanlari.forEach(v => {
+                db.ref(v.path).on('value', snapshot => {
+                    const data = snapshot.val() || {};
+                    
+                    // Önceki aynı modül verilerini temizle
+                    tumVeriler = tumVeriler.filter(item => item.modul !== v.modul);
+
+                    Object.keys(data).forEach(k => {
+                        const c = data[k];
+                        let tutar = c.toplamMasraf || c.tutar || (c.tirpanUcreti || 0) + (c.yolMasrafi || 0) + (c.gubreTutar || 0) + (c.iscilikUcreti || 0);
+                        let aciklama = c.aciklama || c.tirpanAciklama || c.malzemeAdi || (c.plaka ? `${c.plaka} - ${c.tur || ''}` : '') || c.tur || 'Detay Yok';
+
+                        tumVeriler.push({
+                            modul: v.modul,
+                            sezon: c.sezon,
+                            tarih: c.tarih,
+                            aciklama: aciklama,
+                            odeyen: c.odeyen || c.kisi,
+                            tutar: parseFloat(tutar) || 0,
+                            link: v.link
+                        });
                     });
-                });
-            }
 
-            // Gübre Verileri
-            if (data.gubre) {
-                Object.keys(data.gubre).forEach(k => {
-                    const c = data.gubre[k].current || data.gubre[k];
-                    const tutar = (c.gubreTutar || 0) + (c.iscilikUcreti || 0) + (c.yolMasrafi || 0);
-                    tumVeriler.push({
-                        modul: "Gübre",
-                        sezon: c.sezon,
-                        tarih: c.tarih,
-                        aciklama: `${c.malzemeAdi || 'Gübre'} (${c.gubreMiktar || 0} Adet/Kg) - İşçilik: ${c.iscilikUcreti || 0}TL`,
-                        odeyen: c.odeyen,
-                        tutar: tutar,
-                        link: "gubre.html"
-                    });
+                    filtreleVeCiz();
                 });
-            }
-
-            // Fatura Verileri
-            if (data.faturalar) {
-                Object.keys(data.faturalar).forEach(k => {
-                    const c = data.faturalar[k].current || data.faturalar[k];
-                    const tutar = c.faturaTutar || 0;
-                    tumVeriler.push({
-                        modul: "Faturalar",
-                        sezon: c.sezon,
-                        tarih: c.tarih,
-                        aciklama: `${c.faturaTuru || 'Fatura'} - Abone No: ${c.tesisatNo || '-'}`,
-                        odeyen: c.odeyen,
-                        tutar: tutar,
-                        link: "faturalar.html"
-                    });
-                });
-            }
-
-            filtreleVeCiz();
-        });
+            });
+        }
 
         function filtreleVeCiz() {
             const fSezon = document.getElementById('filterSezon').value;
@@ -326,12 +308,12 @@
             süzülen.sort((a,b) => new Date(b.tarih) - new Date(a.tarih));
 
             let genelToplam = 0;
-            let modulToplamlar = { "Faturalar": 0, "Gübre": 0, "Tırpan": 0 };
+            let modulToplamlar = {};
             let kisiToplamlar = {};
 
             süzülen.forEach(i => {
                 genelToplam += i.tutar;
-                if (modulToplamlar[i.modul] !== undefined) modulToplamlar[i.modul] += i.tutar;
+                modulToplamlar[i.modul] = (modulToplamlar[i.modul] || 0) + i.tutar;
                 if (i.odeyen) {
                     kisiToplamlar[i.odeyen] = (kisiToplamlar[i.odeyen] || 0) + i.tutar;
                 }
@@ -382,16 +364,17 @@
                 let badgeClass = "badge-tirpan";
                 if (item.modul === "Gübre") badgeClass = "badge-gubre";
                 if (item.modul === "Faturalar") badgeClass = "badge-fatura";
+                if (item.modul === "Araç") badgeClass = "badge-arac";
+                if (item.modul === "Bakım") badgeClass = "badge-bakim";
 
-                // OKU MODUNDA BUTON DEAKTİF YAPILIR
                 let gitButonu = userPermission === "oku"
                     ? `<button class="btn-go" disabled title="Oku modunda yönlendirme yapılamaz">➔ Git</button>`
                     : `<a href="${item.link}" class="btn-go">➔ Git</a>`;
 
                 tblDetay.innerHTML += `
                     <tr>
-                        <td><b>${item.tarih}</b></td>
-                        <td>${item.sezon}</td>
+                        <td><b>${item.tarih || '-'}</b></td>
+                        <td>${item.sezon || '-'}</td>
                         <td><span class="badge ${badgeClass}">${item.modul}</span></td>
                         <td>${item.aciklama}</td>
                         <td>${item.odeyen || '-'}</td>
