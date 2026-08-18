@@ -42,7 +42,6 @@
         .btn-detail { background: #3182ce; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.75rem; font-weight: bold; }
         .btn-detail:hover { background: #2b6cb0; }
 
-        /* Modal Pencere Stilleri */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 1000; }
         .modal-box { background: white; padding: 20px; border-radius: 12px; max-width: 700px; width: 90%; max-height: 80vh; overflow-y: auto; position: relative; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
         .close-modal { position: absolute; top: 15px; right: 20px; font-size: 1.5rem; cursor: pointer; color: #a0aec0; }
@@ -119,7 +118,6 @@
     </div>
 
     <script>
-        // Firebase Yapılandırması (Giriş ve Ana Sayfa ile Eşitlendi)
         const firebaseConfig = {
             apiKey: "AIzaSyApN7vhnM30cQ1RdAsXiUS8AY08G2QklYY",
             authDomain: "findikhasattakip.firebaseapp.com",
@@ -135,7 +133,7 @@
         }
         const db = firebase.database();
 
-        // 🟢 Online Kullanıcıları ve IP/Şehir Bilgilerini Canlı Dinle
+        // 🟢 Online Kullanıcıları ve Akıllı Zaman Aşımı Kontrolü
         db.ref('onlineUsersDB').on('value', (snapshot) => {
             const tbody = document.getElementById('onlineUserTable');
             tbody.innerHTML = "";
@@ -145,11 +143,19 @@
                 return;
             }
 
+            const simdi = Date.now();
+
             snapshot.forEach((childSnap) => {
                 const username = childSnap.key;
                 const data = childSnap.val();
 
-                const isOnline = data.status === 'online';
+                // Son 2 dakika içinde canlılık sinyali gelmediyse çevrimdışı say
+                let isOnline = data.status === 'online';
+                if (data.lastSeenTimestamp) {
+                    const farkDakika = (simdi - data.lastSeenTimestamp) / (1000 * 60);
+                    if (farkDakika > 2) isOnline = false;
+                }
+
                 const statusBadge = isOnline 
                     ? `<span class="badge-online">🟢 Çevrimiçi</span>` 
                     : `<span class="badge-offline">🔴 Çevrimdışı</span>`;
@@ -177,7 +183,7 @@
             });
         });
 
-        // 📜 İşlem Loglarını Canlı Dinle (Son 50 İşlem)
+        // 📜 İşlem Logları
         db.ref('logsDB').orderByChild('timestamp').limitToLast(50).on('value', (snapshot) => {
             const tbody = document.getElementById('logTable');
             tbody.innerHTML = "";
@@ -214,7 +220,6 @@
             });
         });
 
-        // 📅 Kullanıcının Gün Gün Giriş Geçmişini Döküm Yapan Fonksiyon
         function kullaniciGirisGecmisiGetir(username) {
             document.getElementById('modalTitle').innerText = `📅 ${username.toUpperCase()} - Giriş & Lokasyon Geçmişi`;
             const historyTable = document.getElementById('historyTable');
