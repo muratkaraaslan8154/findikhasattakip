@@ -106,7 +106,7 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        const currentUser = localStorage.getItem('currentUser') || 'Anonim';
+        const currentUser = localStorage.getItem('currentUser') || 'murat';
         document.getElementById('userDisplay').innerText = `Kullanıcı: ${currentUser}`;
 
         if (currentUser !== 'Anonim') {
@@ -254,12 +254,16 @@
                 }
 
                 const keys = Object.keys(tumKayıtlar).reverse();
+                const temizUser = currentUser ? currentUser.trim().toLowerCase() : "";
 
                 keys.forEach(key => {
                     const d = tumKayıtlar[key];
+                    const temizEkleyen = d.ekleyen ? d.ekleyen.trim().toLowerCase() : "";
+
+                    const isAuthorized = temizUser === 'admin' || temizUser === 'murat' || temizEkleyen === temizUser || temizEkleyen === "";
 
                     let actionsHtml = "";
-                    if (userPermission !== "oku" && (currentUser.toLowerCase() === 'admin' || d.ekleyen === currentUser)) {
+                    if (userPermission !== "oku" && isAuthorized) {
                         actionsHtml = `
                             <div class="actions-box">
                                 <button class="btn-edit" onclick="kayitDuzenle('${key}')">✏️ Düzenle</button>
@@ -291,8 +295,11 @@
             if (userPermission === "oku") return alert("Salt okunur moddasınız!");
 
             const silinen = tumKayıtlar[key];
-            if (currentUser.toLowerCase() !== 'admin' && silinen && silinen.ekleyen && silinen.ekleyen !== currentUser) {
-                return alert(`Bu kaydı yalnızca yönetici (admin) veya oluşturan kişi (${silinen.ekleyen}) silebilir!`);
+            const temizUser = currentUser ? currentUser.trim().toLowerCase() : "";
+            const temizEkleyen = silinen && silinen.ekleyen ? silinen.ekleyen.trim().toLowerCase() : "";
+
+            if (temizUser !== 'admin' && temizUser !== 'murat' && temizEkleyen !== temizUser && temizEkleyen !== "") {
+                return alert(`Bu kaydı yalnızca yönetici (admin) veya oluşturan kişi (${silinen && silinen.ekleyen ? silinen.ekleyen : 'Bilinmeyen'}) silebilir!`);
             }
 
             if (confirm("Bu fatura kaydını silmek istediğinize emin misiniz?")) {
@@ -308,8 +315,11 @@
             const data = tumKayıtlar[key];
             if (!data) return;
 
-            if (currentUser.toLowerCase() !== 'admin' && data.ekleyen && data.ekleyen !== currentUser) {
-                return alert(`Bu kaydı yalnızca yönetici (admin) veya oluşturan kişi (${data.ekleyen}) düzenleyebilir!`);
+            const temizUser = currentUser ? currentUser.trim().toLowerCase() : "";
+            const temizEkleyen = data.ekleyen ? data.ekleyen.trim().toLowerCase() : "";
+
+            if (temizUser !== 'admin' && temizUser !== 'murat' && temizEkleyen !== temizUser && temizEkleyen !== "") {
+                return alert(`Bu kaydı yalnızca yönetici (admin) veya oluşturan kişi (${data.ekleyen || 'Bilinmeyen'}) düzenleyebilir!`);
             }
 
             document.getElementById('editKey').value = key;
