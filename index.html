@@ -29,7 +29,7 @@
         }
 
         * { box-sizing: border-box; font-family: 'Roboto', sans-serif; }
-        body { background-color: var(--bg-color); margin: 0; padding: 2rem 1rem; display: flex; flex-direction: column; align-items: center; color: var(--text-main); position: relative; }
+        body { background-color: var(--bg-color); margin: 0; padding: 2rem 1rem; display: flex; flex-direction: column; align-items: center; color: var(--text-main); }
         .container { width: 100%; max-width: 500px; text-align: center; }
         
         .header-icon { font-size: 3.5rem; margin-bottom: 0.5rem; }
@@ -56,13 +56,10 @@
         .user-badge { float: left; background: #edf2f7; padding: 8px 12px; border-radius: 6px; font-weight: bold; color: #2b6cb0; font-size: 0.9rem; }
         .read-only-tag { font-size: 0.7rem; background: #ecc94b; color: #744210; padding: 3px 6px; border-radius: 4px; font-weight: bold; margin-left: 5px; }
 
-        /* YÜZEN SAĞ BİLDİRİM PANELİ */
-        .notification-sidebar {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            width: 310px;
-            z-index: 9999;
+        /* SABİT AKILLI BİLDİRİM BANNER'I */
+        .notification-area {
+            width: 100%;
+            margin-bottom: 1.5rem;
             display: flex;
             flex-direction: column;
             gap: 10px;
@@ -70,38 +67,29 @@
         .notify-card {
             background: #fff5f5;
             border-left: 6px solid #e53e3e;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            padding: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            padding: 12px 15px;
             border-radius: 8px;
-            font-size: 0.82rem;
+            font-size: 0.88rem;
             color: #2d3748;
-            animation: slideIn 0.3s ease-out;
+            text-align: left;
         }
         .notify-card.warning {
             background: #fffaf0;
             border-left-color: #dd6b20;
         }
-        .notify-title { font-weight: bold; font-size: 0.9rem; margin-bottom: 4px; display: flex; justify-content: space-between; }
-        .close-notify { cursor: pointer; color: #a0aec0; font-weight: bold; }
-
-        @keyframes slideIn {
-            from { transform: translateX(100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
+        .notify-title { 
+            font-weight: bold; 
+            font-size: 0.95rem; 
+            margin-bottom: 4px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
         }
-
-        @media (max-width: 850px) {
-            .notification-sidebar {
-                position: static;
-                width: 100%;
-                max-width: 500px;
-                margin-bottom: 15px;
-            }
-        }
+        .close-notify { cursor: pointer; color: #a0aec0; font-weight: bold; font-size: 1.1rem; }
     </style>
 </head>
 <body>
-
-    <div id="notificationSidebar" class="notification-sidebar"></div>
 
     <div class="container">
         <div>
@@ -109,6 +97,9 @@
             <button class="logout-btn" onclick="cikisYap()">Güvenli Çıkış</button>
         </div>
         <div style="clear: both;"></div>
+
+        <!-- SABİT UYARI ALANI -->
+        <div id="notificationSidebar" class="notification-area" style="margin-top: 1rem;"></div>
 
         <div class="header-icon">🌰</div>
         <h1>Fındık Masraf<br>Yönetim Platformu</h1>
@@ -177,68 +168,67 @@
             if(ayarBtn) ayarBtn.style.display = "none";
         }
 
-        let uyariAyarlar = {
-            muayene: { gun: 30, saat: 0, dakika: 0 },
-            sigorta: { gun: 30, saat: 0, dakika: 0 },
-            mtv: { gun: 15, saat: 0, dakika: 0 }
-        };
+        let uyariAyarlar = {};
 
         db.ref('varsayilanlarDB/uyariAyar').on('value', (s) => {
-            if(s.val()) uyariAyarlar = s.val();
+            uyariAyarlar = s.val() || {};
             bildirimleriKontrolEt();
         });
 
         setInterval(bildirimleriKontrolEt, 1000);
 
         function bildirimleriKontrolEt() {
-            db.ref('araclarDB').once('value', (s) => {
-                const araclar = s.val() || [];
-                const sidebar = document.getElementById('notificationSidebar');
-                sidebar.innerHTML = "";
-                const simdi = new Date().getTime();
+            const sidebar = document.getElementById('notificationSidebar');
+            if (!sidebar) return;
+            
+            const simdi = new Date().getTime();
+            let htmlContent = "";
 
-                araclar.forEach(a => {
-                    if(typeof a === 'object') {
-                        const hedefler = [
-                            { key: 'muayeneTarihi', etiket: '📋 Muayene', ayar: uyariAyarlar.muayene },
-                            { key: 'sigortaTarihi', etiket: '🛡️ Sigorta', ayar: uyariAyarlar.sigorta },
-                            { key: 'mtvTarihi', etiket: '💳 MTV', ayar: uyariAyarlar.mtv }
-                        ];
+            // Kırmızı Kutudaki Genel Uyarı Ayarlarını Kontrol Et
+            const genelTurler = [
+                { key: 'muayene', etiket: '📋 Muayene' },
+                { key: 'sigorta', etiket: '🛡️ Sigorta' },
+                { key: 'mtv', etiket: '💳 MTV' }
+            ];
 
-                        hedefler.forEach(item => {
-                            if(a[item.key]) {
-                                const hedefZaman = new Date(a[item.key] + "T23:59:59").getTime();
-                                const farkMs = hedefZaman - simdi;
-                                const esikMs = (((item.ayar.gun || 0) * 24 * 60) + ((item.ayar.saat || 0) * 60) + (item.ayar.dakika || 0)) * 60 * 1000;
+            genelTurler.forEach(item => {
+                const ayar = uyariAyarlar[item.key];
+                if (ayar && ayar.tarih) {
+                    const saatStr = ayar.zaman ? ayar.zaman : "00:00";
+                    const hedefZaman = new Date(`${ayar.tarih}T${saatStr}:00`).getTime();
+                    
+                    if (!isNaN(hedefZaman)) {
+                        const farkMs = hedefZaman - simdi;
+                        const esikMs = (((ayar.gun || 0) * 24 * 60) + ((ayar.saat || 0) * 60) + (ayar.dakika || 0)) * 60 * 1000;
 
-                                if(farkMs <= esikMs) {
-                                    const isExpired = farkMs < 0;
-                                    const mutlakMs = Math.abs(farkMs);
+                        if (farkMs <= esikMs) {
+                            const isExpired = farkMs <= 0;
+                            const mutlakMs = Math.abs(farkMs);
 
-                                    const d = Math.floor(mutlakMs / (1000 * 60 * 60 * 24));
-                                    const h = Math.floor((mutlakMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                                    const m = Math.floor((mutlakMs % (1000 * 60 * 60)) / (1000 * 60));
-                                    const sec = Math.floor((mutlakMs % (1000 * 60)) / 1000);
+                            const d = Math.floor(mutlakMs / (1000 * 60 * 60 * 24));
+                            const h = Math.floor((mutlakMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                            const m = Math.floor((mutlakMs % (1000 * 60 * 60)) / (1000 * 60));
+                            const sec = Math.floor((mutlakMs % (1000 * 60)) / 1000);
 
-                                    const zamanStr = `${d}g ${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+                            const zamanStr = `${d}g ${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
 
-                                    sidebar.innerHTML += `
-                                        <div class="${isExpired ? 'notify-card' : 'notify-card warning'}">
-                                            <div class="notify-title">
-                                                <span>🚨 ${a.plaka}</span>
-                                                <span class="close-notify" onclick="this.parentElement.parentElement.remove()">✕</span>
-                                            </div>
-                                            <div><b>${item.etiket}:</b> ${a[item.key]}</div>
-                                            <div style="margin-top:4px;">
-                                                ${isExpired ? `<b style="color:#e53e3e;">Tarihi ${zamanStr} geçti!</b>` : `<b>Kalan Süre: ${zamanStr}</b>`}
-                                            </div>
-                                        </div>`;
-                                }
-                            }
-                        });
+                            htmlContent += `
+                                <div class="${isExpired ? 'notify-card' : 'notify-card warning'}">
+                                    <div class="notify-title">
+                                        <span>🚨 ${item.etiket}</span>
+                                        <span class="close-notify" onclick="this.parentElement.parentElement.remove()">✕</span>
+                                    </div>
+                                    <div><b>Hedef Tarih:</b> ${ayar.tarih} ${saatStr}</div>
+                                    <div style="margin-top:4px;">
+                                        ${isExpired ? `<b style="color:#e53e3e;">Tarihi ${zamanStr} geçti!</b>` : `<b>Kalan Süre: ${zamanStr}</b>`}
+                                    </div>
+                                </div>`;
+                        }
                     }
-                });
+                }
             });
+
+            sidebar.innerHTML = htmlContent;
         }
 
         if(currentUser) {
