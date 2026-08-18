@@ -45,6 +45,7 @@
         .link-arac { border-left-color: var(--arac-color); }
         .link-fatura { border-left-color: var(--fatura-color); }
         .link-rapor { border-left-color: var(--rapor-color); }
+        .link-log { border-left-color: #319795; }
 
         .icon-box { font-size: 2rem; margin-right: 1rem; background: #f7fafc; padding: 0.8rem; border-radius: 50%; min-width: 65px; text-align: center; }
         .text-box { display: flex; flex-direction: column; flex: 1; }
@@ -56,36 +57,10 @@
         .user-badge { float: left; background: #edf2f7; padding: 8px 12px; border-radius: 6px; font-weight: bold; color: #2b6cb0; font-size: 0.9rem; }
         .read-only-tag { font-size: 0.7rem; background: #ecc94b; color: #744210; padding: 3px 6px; border-radius: 4px; font-weight: bold; margin-left: 5px; }
 
-        /* SABİT AKILLI BİLDİRİM BANNER'I */
-        .notification-area {
-            width: 100%;
-            margin-bottom: 1.5rem;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-        .notify-card {
-            background: #fff5f5;
-            border-left: 6px solid #e53e3e;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-            padding: 12px 15px;
-            border-radius: 8px;
-            font-size: 0.88rem;
-            color: #2d3748;
-            text-align: left;
-        }
-        .notify-card.warning {
-            background: #fffaf0;
-            border-left-color: #dd6b20;
-        }
-        .notify-title { 
-            font-weight: bold; 
-            font-size: 0.95rem; 
-            margin-bottom: 4px; 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-        }
+        .notification-area { width: 100%; margin-bottom: 1.5rem; display: flex; flex-direction: column; gap: 10px; }
+        .notify-card { background: #fff5f5; border-left: 6px solid #e53e3e; box-shadow: 0 2px 8px rgba(0,0,0,0.06); padding: 12px 15px; border-radius: 8px; font-size: 0.88rem; color: #2d3748; text-align: left; }
+        .notify-card.warning { background: #fffaf0; border-left-color: #dd6b20; }
+        .notify-title { font-weight: bold; font-size: 0.95rem; margin-bottom: 4px; display: flex; justify-content: space-between; align-items: center; }
         .close-notify { cursor: pointer; color: #a0aec0; font-weight: bold; font-size: 1.1rem; }
     </style>
 </head>
@@ -98,7 +73,6 @@
         </div>
         <div style="clear: both;"></div>
 
-        <!-- SABİT UYARI ALANI -->
         <div id="notificationSidebar" class="notification-area" style="margin-top: 1rem;"></div>
 
         <div class="header-icon">🌰</div>
@@ -141,7 +115,13 @@
             <div class="text-box"><span class="title">Sezon Raporu & Cari Hesap <span class="tag-box"></span></span><span class="desc">Kardeşler arası döküm ve borç/alacak.</span></div>
         </a>
 
-        <a href="ayarlar.html" id="m_ayarlar" class="menu-link" style="border-left-color: #a0aec0;">
+        <!-- YÖNETİCİ LOG BUTONU -->
+        <a href="loglar.html" id="m_loglar" class="menu-link link-log" style="display: none;">
+            <div class="icon-box">📜</div>
+            <div class="text-box"><span class="title">Sistem & Giriş Logları</span><span class="desc">Canlı kullanıcı, IP/lokasyon ve işlem takibi.</span></div>
+        </a>
+
+        <a href="ayarlar.html" id="m_ayarlar" class="menu-link" style="border-left-color: #a0aec0; display: none;">
             <div class="icon-box">⚙️</div>
             <div class="text-box"><span class="title">Sistem Ayarları</span><span class="desc">Uyarı süreleri, yetkilendirme ve araç tarihleri.</span></div>
         </a>
@@ -163,9 +143,12 @@
         const currentUser = localStorage.getItem('currentUser') || "";
         if(currentUser) document.getElementById('currentUserDisplay').innerText = "👤 " + currentUser.toUpperCase();
 
-        if(currentUser !== "murat") {
+        // Admin Kontrolü (Log ve Ayarlar Menüleri)
+        if(currentUser === "murat") {
             const ayarBtn = document.getElementById('m_ayarlar');
-            if(ayarBtn) ayarBtn.style.display = "none";
+            const logBtn = document.getElementById('m_loglar');
+            if(ayarBtn) ayarBtn.style.display = "flex";
+            if(logBtn) logBtn.style.display = "flex";
         }
 
         let uyariAyarlar = {};
@@ -272,7 +255,6 @@
             window.location.href = 'giris.html';
         }
 
-        // --- ONLINE DURUM TAKİBİ & LOG FONKSİYONLARI ---
         function logEkle(islemAdi, detay = '') {
             if (!currentUser) return;
             db.ref('logsDB').push({
@@ -303,7 +285,6 @@
                 }
             });
 
-            // Ana sayfaya girildiği an log kaydı yap
             logEkle("Sayfa Ziyareti", "Ana Menü");
         }
     </script>
