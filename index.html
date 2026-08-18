@@ -143,7 +143,28 @@
         const currentUser = localStorage.getItem('currentUser') || "";
         if(currentUser) document.getElementById('currentUserDisplay').innerText = "👤 " + currentUser.toUpperCase();
 
-        // Admin Kontrolü (Log ve Ayarlar Menüleri)
+        let userIp = "-";
+        let userCity = "-";
+
+        // IP ve Konum Bilgisini Otomatik Çekme
+        async function ipVeKonumGetir() {
+            try {
+                const response = await fetch('https://ipapi.co/json/');
+                const data = await response.json();
+                userIp = data.ip || "-";
+                userCity = data.city || data.region || "-";
+            } catch (e) {
+                try {
+                    const fallback = await fetch('https://api.ipify.org?format=json');
+                    const fbData = await fallback.json();
+                    userIp = fbData.ip || "-";
+                } catch(err) {
+                    console.log("IP servisine ulaşılamadı.");
+                }
+            }
+        }
+
+        // Admin Kontrolü
         if(currentUser === "murat") {
             const ayarBtn = document.getElementById('m_ayarlar');
             const logBtn = document.getElementById('m_loglar');
@@ -246,7 +267,8 @@
         function cikisYap() {
             logEkle("Sistemden Çıkış Yapıldı", "");
             if (currentUser) {
-                db.ref('onlineUsersDB/' + currentUser).set({
+                // .set yerine .update kullanarak IP ve cihaz bilgilerinin silinmesi engellendi
+                db.ref('onlineUsersDB/' + currentUser).update({
                     status: 'offline',
                     lastSeen: new Date().toLocaleString('tr-TR')
                 });
@@ -261,32 +283,45 @@
                 kullanici: currentUser,
                 islem: islemAdi,
                 detay: detay,
+                ip: userIp,
+                sehir: userCity,
                 tarih: new Date().toLocaleString('tr-TR'),
                 timestamp: firebase.database.ServerValue.TIMESTAMP
             });
         }
 
-        if (currentUser) {
-            const connectedRef = db.ref('.info/connected');
-            const userPresenceRef = db.ref('onlineUsersDB/' + currentUser);
+        // Başlangıç İşlemleri: IP Al ve Durumu Güncelle
+        async function baslat() {
+            await ipVeKonumGetir();
 
-            connectedRef.on('value', (snap) => {
-                if (snap.val() === true) {
-                    userPresenceRef.onDisconnect().set({
-                        status: 'offline',
-                        lastSeen: new Date().toLocaleString('tr-TR')
-                    });
+            if (currentUser) {
+                const connectedRef = db.ref('.info/connected');
+                const userPresenceRef = db.ref('onlineUsersDB/' + currentUser);
 
-                    userPresenceRef.set({
-                        status: 'online',
-                        lastSeen: new Date().toLocaleString('tr-TR'),
-                        device: /Android|iPhone|iPad/i.test(navigator.userAgent) ? '📱 Mobil' : '💻 Bilgisayar'
-                    });
-                }
-            });
+                connectedRef.on('value', (snap) => {
+                    if (snap.val() === true) {
+                        // Bağlantı koptuğunda verileri silmeden sadece pasif yap
+                        userPresenceRef.onDisconnect().update({
+                            status: 'offline',
+                            lastSeen: new Date().toLocaleString('tr-TR')
+                        });
 
-            logEkle("Sayfa Ziyareti", "Ana Menü");
+                        // Kullanıcı aktif olduğunda IP, İl ve Cihaz verilerini kaydet
+                        userPresenceRef.update({
+                            status: 'online',
+                            lastSeen: new Date().toLocaleString('tr-TR'),
+                            device: /Android|iPhone|iPad/i.test(navigator.userAgent) ? '📱 Mobil' : '💻 Bilgisayar',
+                            ip: userIp,
+                            sehir: userCity
+                        });
+                    }
+                });
+
+                logEkle("Sayfa Ziyareti", "Ana Menü");
+            }
         }
+
+        baslat();
     </script>
 </body>
 </html>
