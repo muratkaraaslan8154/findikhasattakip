@@ -26,6 +26,24 @@
         label { display: block; font-size: 0.85rem; font-weight: bold; margin-bottom: 5px; color: #4a5568;}
         input, select, textarea { width: 100%; padding: 10px; border: 1px solid #cbd5e0; border-radius: 6px; box-sizing: border-box; font-size: 0.95rem; }
         
+        /* Finansal Özet Kartları Stili */
+        .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; margin-bottom: 15px; }
+        .summary-card { padding: 12px; border-radius: 8px; text-align: center; border: 1px solid #e2e8f0; }
+        .summary-title { font-size: 0.75rem; font-weight: bold; letter-spacing: 0.3px; }
+        .summary-value { font-size: 1.25rem; font-weight: 700; margin-top: 4px; }
+
+        .summary-card.hasilat { background: #e6fffa; border-color: #b2f5ea; }
+        .summary-card.hasilat .summary-title { color: #234e52; }
+        .summary-card.hasilat .summary-value { color: #276749; }
+
+        .summary-card.odeme { background: #fff5f5; border-color: #fed7d7; }
+        .summary-card.odeme .summary-title { color: #742a2a; }
+        .summary-card.odeme .summary-value { color: #c53030; }
+
+        .summary-card.kalan { background: #ebf8ff; border-color: #bee3f8; }
+        .summary-card.kalan .summary-title { color: #2c5282; }
+        .summary-card.kalan .summary-value { color: #2b6cb0; }
+
         .btn-save { background: #2b6cb0; color: white; width: 100%; padding: 12px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 1rem; margin-top: 5px; }
         .btn-cancel { background: #a0aec0; color: white; border: none; padding: 8px; width: 100%; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 0.9rem; margin-top: 8px; display: none;}
         .btn-back { background: #edf2f7; color: #4a5568; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; margin-bottom: 15px; text-decoration: none; display: inline-block;}
@@ -44,7 +62,7 @@
         <a href="index.html" class="btn-back">⬅️ Ana Menüye Dön</a>
         
         <div class="header-title">
-            <h2>💳 Kişisel Ödemeler (Hakediş Cap)</h2>
+            <h2>💳 Kişisel Ödemeler & Hakediş</h2>
             <span class="user-tag" id="userDisplay">Kullanıcı: Yükleniyor...</span>
         </div>
 
@@ -58,6 +76,22 @@
             <div class="form-group">
                 <label>Görüntülenecek / İşlem Yapılacak Sezon:</label>
                 <select id="sezonSecici" onchange="verileriYukle()"></select>
+            </div>
+        </div>
+
+        <!-- SEZONLUK FİNANSAL DUMUM ÖZETİ -->
+        <div class="summary-grid">
+            <div class="summary-card hasilat">
+                <div class="summary-title">🌾 TOPLAM HASILAT</div>
+                <div class="summary-value" id="sezonHasilatGosterge">0,00 TL</div>
+            </div>
+            <div class="summary-card odeme">
+                <div class="summary-title">💳 YAPILAN ÖDEMELER</div>
+                <div class="summary-value" id="sezonOdemeGosterge">0,00 TL</div>
+            </div>
+            <div class="summary-card kalan">
+                <div class="summary-title">⚖️ KALAN / NET BAKİYE</div>
+                <div class="summary-value" id="sezonKalanGosterge">0,00 TL</div>
             </div>
         </div>
 
@@ -234,9 +268,51 @@
             const secilenSezon = document.getElementById('sezonSecici').value;
             const container = document.getElementById('gecmisListesi');
 
+            let toplamHasilat = 0;
+            let toplamOdeme = 0;
+
+            function ozetiGuncelle() {
+                const kalanBakiye = toplamHasilat - toplamOdeme;
+                
+                document.getElementById('sezonHasilatGosterge').innerText = 
+                    toplamHasilat.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " TL";
+                
+                document.getElementById('sezonOdemeGosterge').innerText = 
+                    toplamOdeme.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " TL";
+
+                const kalanEl = document.getElementById('sezonKalanGosterge');
+                kalanEl.innerText = kalanBakiye.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " TL";
+                
+                if (kalanBakiye < 0) {
+                    kalanEl.style.color = "#e53e3e"; // Borç/Fazla ödeme varsa kırmızı
+                } else {
+                    kalanEl.style.color = "#2b6cb0"; // Normal pozitif bakiye
+                }
+            }
+
+            // 1. RANDIMAN / HASILAT VERİLERİNİ ÇEK VE TOPLA
+            db.ref('randimanDB').orderByChild('sezon').equalTo(secilenSezon).on('value', (snap) => {
+                const randimanData = snap.val() || {};
+                toplamHasilat = 0;
+
+                Object.values(randimanData).forEach(item => {
+                    toplamHasilat += (parseFloat(item.toplamTutar) || 0);
+                });
+
+                ozetiGuncelle();
+            });
+
+            // 2. ÖDEMELERİ ÇEK, TOPLA VE LİSTELE
             db.ref('odemelerDB').orderByChild('sezon').equalTo(secilenSezon).on('value', (snapshot) => {
                 tumOdemeler = snapshot.val() || {};
+                toplamOdeme = 0;
                 container.innerHTML = "";
+
+                Object.values(tumOdemeler).forEach(item => {
+                    toplamOdeme += (parseFloat(item.tutar) || 0);
+                });
+
+                ozetiGuncelle();
 
                 if (Object.keys(tumOdemeler).length === 0) {
                     container.innerHTML = "<p style='color:#718096; font-size:0.9rem;'>Bu sezona ait yapılan ödeme kaydı bulunmuyor.</p>";

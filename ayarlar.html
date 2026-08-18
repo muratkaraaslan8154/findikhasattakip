@@ -44,7 +44,12 @@
         th { background-color: #edf2f7; color: #4a5568; }
         
         .list-group { list-style: none; padding: 0; margin-top: 10px; }
-        .list-item { display: flex; justify-content: space-between; align-items: center; background: white; padding: 10px; border: 1px solid #e2e8f0; margin-bottom: 8px; border-radius: 6px; font-size: 0.85rem; }
+        .list-item { display: flex; justify-content: space-between; align-items: center; background: white; padding: 10px; border: 1px solid #e2e8f0; margin-bottom: 8px; border-radius: 6px; font-size: 0.85rem; transition: background 0.15s, border-color 0.15s; }
+        .list-item[draggable="true"] { cursor: grab; user-select: none; }
+        .list-item.dragging { opacity: 0.4; border: 2px dashed #dd6b20; background-color: #feebc8; }
+        .list-item.drag-over { border-top: 3px solid #dd6b20; }
+        .drag-handle { cursor: grab; font-size: 1.1rem; margin-right: 10px; color: #a0aec0; font-weight: bold; display: inline-block; }
+        
         .btn-del { background: #e53e3e; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 0.75rem; }
         .btn-edit { background: #3182ce; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 0.75rem; margin-right: 4px; }
         .btn-default { background: #d69e2e; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 0.75rem; margin-right: 4px; }
@@ -70,7 +75,6 @@
         .live-timer-box { display: none; margin-top: 10px; padding: 8px 12px; background: #ffffff; border-radius: 6px; border: 1px dashed #cbd5e0; text-align: center; font-size: 0.85rem; }
         .timer-val { font-family: 'Courier New', Courier, monospace; font-weight: bold; font-size: 0.95rem; color: #2d3748; margin-top: 2px; }
 
-        /* Modal Pencere Stilleri */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 1000; }
         .modal-content { background: white; border-radius: 12px; padding: 1.5rem; width: 90%; max-width: 700px; max-height: 80vh; overflow-y: auto; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
         .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; margin-bottom: 15px; }
@@ -80,11 +84,25 @@
 </head>
 <body>
     <div class="container">
-        <!-- ⬅️ ANA MENÜYE DÖN BUTONU (ÜSTE ALINDI) -->
         <a href="index.html" class="btn-back-top">⬅️ Ana Menüye Dön</a>
 
         <h2>⚙️ Firebase Sistem Yönetimi <span style="font-size: 0.85rem; font-weight: normal; color: #718096;" id="adminLabel"></span></h2>
         <div id="statusLabel" class="loading">Firebase Bağlantısı Yapılıyor...</div>
+
+        <!-- LOGO / GÖRSEL YÖNETİMİ -->
+        <div class="section-box blue">
+            <h3 style="margin-top:0; font-size:1rem; color:#2b6cb0;">🖼️ Portal Logo / Görsel Ayarı</h3>
+            <div class="form-group">
+                <label>Cihazdan Logo Dosyası Seçin:</label>
+                <input type="file" id="yeniLogoFoto" accept="image/*">
+            </div>
+            <div class="form-group">
+                <label>veya Görsel URL / Dosya Yolu Girin:</label>
+                <input type="text" id="yeniLogoUrl" placeholder="Örn: findik-gorsel.png veya https://..." style="text-align:left;">
+            </div>
+            <button class="btn" style="background:#3182ce;" onclick="logoKaydet()">Logoyu Kaydet / Güncelle</button>
+            <div id="mevcutLogoOnizleme" style="margin-top:10px; text-align:center;"></div>
+        </div>
 
         <!-- KULLANICI & YETKİ YÖNETİMİ -->
         <div class="section-box">
@@ -118,7 +136,9 @@
                     <div class="perm-item"><label>🪚 Bakım:</label><select id="permBakim"><option value="tam">🟢 Tam</option><option value="oku">👁️ Oku</option><option value="yok">🔴 Yok</option></select></div>
                     <div class="perm-item"><label>🚗 Araç:</label><select id="permArac"><option value="tam">🟢 Tam</option><option value="oku">👁️ Oku</option><option value="yok">🔴 Yok</option></select></div>
                     <div class="perm-item"><label>🧾 Fatura:</label><select id="permFaturalar"><option value="tam">🟢 Tam</option><option value="oku">👁️ Oku</option><option value="yok">🔴 Yok</option></select></div>
+                    <div class="perm-item"><label>⚖️ Randıman:</label><select id="permRandiman"><option value="tam">🟢 Tam</option><option value="oku">👁️ Oku</option><option value="yok">🔴 Yok</option></select></div>
                     <div class="perm-item"><label>📊 Rapor:</label><select id="permRapor"><option value="tam">🟢 Tam</option><option value="oku">👁️ Oku</option><option value="yok">🔴 Yok</option></select></div>
+                    <div class="perm-item"><label>⚙️ Ayarlar:</label><select id="permAyarlar"><option value="tam">🟢 Tam</option><option value="oku">👁️ Oku</option><option value="yok">🔴 Yok</option></select></div>
                 </div>
             </div>
 
@@ -233,60 +253,18 @@
 
         <div class="section-box orange">
             <label>📅 Sezon (Yıl)</label>
-            <input type="number" id="yeniSezon" placeholder="Örn: 2026">
-            <button class="btn" style="background:#dd6b20;" onclick="sezonEkle()">Sezon Ekle</button>
+            <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+                <input type="number" id="yeniSezon" placeholder="Örn: 2026" style="margin-bottom:0;">
+                <button class="btn" style="background:#dd6b20; width: auto; white-space: nowrap;" onclick="sezonEkle()">Sezon Ekle</button>
+            </div>
+            <div style="display: flex; gap: 6px; margin-bottom: 10px;">
+                <button class="btn" style="background:#4a5568; font-size: 0.75rem; padding: 6px;" onclick="sezonlariSirala('AZ')">🔤 A-Z (Artan)</button>
+                <button class="btn" style="background:#4a5568; font-size: 0.75rem; padding: 6px;" onclick="sezonlariSirala('ZA')">🔤 Z-A (Azalan)</button>
+            </div>
             <ul class="list-group" id="sezonListesi"></ul>
-        </div>
-
-        <!-- 📜 LOKASYON & İŞLEM LOG BÖLÜMÜ (EN ALTA EKLENDİ) -->
-        <div class="section-box dark">
-            <h3 style="margin-top: 0; font-size: 1.1rem; color: #2b6cb0;">👥 Canlı Kullanıcı Durumu & Konum Takibi</h3>
-            <div style="overflow-x: auto;">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Kullanıcı</th>
-                            <th>Durum</th>
-                            <th>Cihaz</th>
-                            <th>IP Adresi</th>
-                            <th>İl</th>
-                            <th>Son Görülme</th>
-                            <th>Konum</th>
-                            <th>Geçmiş</th>
-                        </tr>
-                    </thead>
-                    <tbody id="onlineUserTable">
-                        <tr><td colspan="8">Yükleniyor...</td></tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <div class="section-box dark">
-            <h3 style="margin-top: 0; font-size: 1.1rem; color: #2b6cb0;">
-                📜 Sistem Hareket & İşlem Günlüğü
-                <button class="btn-clear" onclick="loglariTemizle()">Temizle</button>
-            </h3>
-            <div style="overflow-x: auto;">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Tarih / Saat</th>
-                            <th>Kullanıcı</th>
-                            <th>IP / Şehir</th>
-                            <th>Yapılan İşlem</th>
-                            <th>Detay</th>
-                        </tr>
-                    </thead>
-                    <tbody id="logTable">
-                        <tr><td colspan="5">Yükleniyor...</td></tr>
-                    </tbody>
-                </table>
-            </div>
         </div>
     </div>
 
-    <!-- Gün Gün Giriş Geçmişi Modalı -->
     <div id="historyModal" class="modal-overlay">
         <div class="modal-content">
             <div class="modal-header">
@@ -336,6 +314,7 @@
         let localKisiler = [];
         let localSezonlar = [];
         let localVarsayilanlar = {};
+        let draggedIndex = null;
 
         function toArray(data) {
             if (!data) return [];
@@ -355,71 +334,42 @@
             renderAraclar(); renderAbonelikler(); renderKisiler(); renderSezonlar();
         });
 
+        // Mevcut Logoyu Firebase'den Dinler ve Önizleme Yapar
+        db.ref('varsayilanlarDB/logo').on('value', (s) => {
+            const logo = s.val();
+            const preview = document.getElementById('mevcutLogoOnizleme');
+            if (logo && preview) {
+                preview.innerHTML = `<small><b>Mevcut Kayıtlı Logo:</b></small><br><img src="${logo}" style="max-height:80px; margin-top:5px; border-radius:6px; box-shadow:0 2px 5px rgba(0,0,0,0.2);">`;
+            }
+        });
+
+        async function logoKaydet() {
+            const fileInput = document.getElementById('yeniLogoFoto');
+            const urlInput = document.getElementById('yeniLogoUrl').value.trim();
+            let logoData = "";
+
+            if (fileInput.files.length > 0) {
+                logoData = await base64Dönüştür(fileInput.files[0]);
+            } else if (urlInput) {
+                logoData = urlInput;
+            } else {
+                return alert("Lütfen bir dosya seçin veya geçerli bir URL/dosya adı girin!");
+            }
+
+            db.ref('varsayilanlarDB/logo').set(logoData)
+                .then(() => {
+                    alert("✅ Logo başarıyla güncellendi!");
+                    document.getElementById('yeniLogoFoto').value = "";
+                    document.getElementById('yeniLogoUrl').value = "";
+                })
+                .catch((err) => alert("Hata oluştu: " + err.message));
+        }
+
         db.ref('usersDB').on('value', (s) => { localUsers = s.val() || {}; kullaniciListesiniGuncelle(); });
         db.ref('araclarDB').on('value', (s) => { localAraclar = toArray(s.val()); renderAraclar(); });
         db.ref('aboneliklerDB').on('value', (s) => { localAbonelikler = toArray(s.val()); renderAbonelikler(); });
         db.ref('kisilerDB').on('value', (s) => { localKisiler = toArray(s.val()); renderKisiler(); });
         db.ref('sezonlarDB').on('value', (s) => { localSezonlar = toArray(s.val()); renderSezonlar(); });
-
-        // --- ONLINE KULLANICILAR CANLI DİNLEME ---
-        db.ref('onlineUsersDB').on('value', (snapshot) => {
-            const users = snapshot.val() || {};
-            const tbody = document.getElementById('onlineUserTable');
-            if(!tbody) return;
-            tbody.innerHTML = "";
-
-            if (Object.keys(users).length === 0) {
-                tbody.innerHTML = "<tr><td colspan='8'>Aktif kullanıcı bulunmuyor.</td></tr>";
-                return;
-            }
-
-            for (const [username, data] of Object.entries(users)) {
-                const isOnline = data.status === 'online';
-                const statusBadge = isOnline ? `<span class="badge-online">🟢 Aktif</span>` : `<span class="badge-offline">🔴 Pasif</span>`;
-                const konumBadge = data.farkliLokasyon ? `<span class="badge-alert">⚠️ Farklı</span>` : `<span class="badge-normal">✅ Normal</span>`;
-
-                tbody.innerHTML += `
-                    <tr>
-                        <td><b>${username}</b></td>
-                        <td>${statusBadge}</td>
-                        <td>${data.device || '-'}</td>
-                        <td>${data.ip || '-'}</td>
-                        <td>${data.sehir || '-'}</td>
-                        <td>${data.lastSeen || '-'}</td>
-                        <td>${konumBadge}</td>
-                        <td><button class="btn-detail" onclick="kullaniciGirisGecmisiGetir('${username}')">📅 Girişler</button></td>
-                    </tr>`;
-            }
-        });
-
-        // --- CANLI İŞLEM LOGLARI ---
-        db.ref('logsDB').orderByChild('timestamp').limitToLast(30).on('value', (snapshot) => {
-            const logs = snapshot.val() || {};
-            const tbody = document.getElementById('logTable');
-            if(!tbody) return;
-            tbody.innerHTML = "";
-
-            const logList = Object.values(logs).reverse();
-            if (logList.length === 0) {
-                tbody.innerHTML = "<tr><td colspan='5'>Henüz işlem kaydı yok.</td></tr>";
-                return;
-            }
-
-            logList.forEach(log => {
-                const isFarkli = log.farkliLokasyon || (log.islem && log.islem.includes('Farklı Lokasyon'));
-                const islemStili = isFarkli ? `<span style="color:#e53e3e; font-weight:bold;">${log.islem}</span>` : `<span style="color:#2b6cb0; font-weight:500;">${log.islem}</span>`;
-                const ipSehirText = (log.ip || log.sehir) ? `${log.ip || ''} (${log.sehir || ''})` : '-';
-
-                tbody.innerHTML += `
-                    <tr>
-                        <td style="color:#718096; font-size:0.75rem;">${log.tarih || '-'}</td>
-                        <td><b>${log.kullanici || 'Anonim'}</b></td>
-                        <td><small style="color:#4a5568;">${ipSehirText}</small></td>
-                        <td>${islemStili}</td>
-                        <td style="color:#4a5568;">${log.detay || '-'}</td>
-                    </tr>`;
-            });
-        });
 
         function kullaniciGirisGecmisiGetir(username) {
             document.getElementById('modalTitle').innerText = `📅 ${username.toUpperCase()} - Giriş Geçmişi`;
@@ -453,7 +403,6 @@
         }
 
         function modalKapat() { document.getElementById('historyModal').style.display = 'none'; }
-        function loglariTemizle() { if (confirm("Tüm işlem geçmişini silmek istediğinize emin misiniz?")) db.ref('logsDB').remove(); }
 
         function formuDoldur(prefix, item) {
             if (!item) return;
@@ -658,7 +607,9 @@
                     bakim: document.getElementById('permBakim').value,
                     arac: document.getElementById('permArac').value,
                     faturalar: document.getElementById('permFaturalar').value,
-                    rapor: document.getElementById('permRapor').value
+                    randiman: document.getElementById('permRandiman').value,
+                    rapor: document.getElementById('permRapor').value,
+                    ayarlar: document.getElementById('permAyarlar').value
                 }
             });
             formuTemizle();
@@ -679,7 +630,9 @@
             document.getElementById('permBakim').value = p.bakim || "tam";
             document.getElementById('permArac').value = p.arac || "tam";
             document.getElementById('permFaturalar').value = p.faturalar || "tam";
+            document.getElementById('permRandiman').value = p.randiman || "tam";
             document.getElementById('permRapor').value = p.rapor || "tam";
+            document.getElementById('permAyarlar').value = p.ayarlar || "tam";
             document.getElementById('formTitle').innerText = "Düzenle: " + u;
             document.getElementById('saveBtn').innerText = "Güncelle";
             document.getElementById('cancelBtn').style.display = "block";
@@ -751,34 +704,97 @@
             document.getElementById('yeniKisi').value = "";
         }
 
+        /* --- SÜRÜKLE-BIRAK (DRAG & DROP) İLE SEZON SIRALAMA --- */
         function renderSezonlar() { 
             const def = localVarsayilanlar.sezon;
-            const sezonList = toArray(localSezonlar);
-            document.getElementById('sezonListesi').innerHTML = sezonList.map((item, i) => `
-                <li class="list-item">
-                    <div>
+            let sezonList = toArray(localSezonlar);
+
+            document.getElementById('sezonListesi').innerHTML = sezonList.map((item, index) => `
+                <li class="list-item" 
+                    draggable="true" 
+                    ondragstart="dragStart(event, ${index})" 
+                    ondragover="dragOver(event)" 
+                    ondragleave="dragLeave(event)"
+                    ondrop="dragDrop(event, ${index})"
+                    ondragend="dragEnd(event)">
+                    <div style="display: flex; align-items: center;">
+                        <span class="drag-handle" title="Tut ve Sürükle">☰</span>
                         <b>${item}</b> ${item === def ? '<span class="badge-default">⭐ Varsayılan</span>' : ''}
                     </div>
                     <div>
                         ${item !== def ? `<button class="btn-default" onclick="varsayilanYap('sezon', '${item}')">⭐ Varsayılan Yap</button>` : ''}
-                        <button class="btn-del" onclick="listeElemanSil('sezonlarDB', ${i})">Sil</button>
+                        <button class="btn-del" onclick="sezonSil('${item}')">Sil</button>
                     </div>
                 </li>`).join(''); 
+        }
+
+        function dragStart(e, index) {
+            draggedIndex = index;
+            e.currentTarget.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+        }
+
+        function dragOver(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            e.currentTarget.classList.add('drag-over');
+        }
+
+        function dragLeave(e) {
+            e.currentTarget.classList.remove('drag-over');
+        }
+
+        function dragDrop(e, targetIndex) {
+            e.preventDefault();
+            e.currentTarget.classList.remove('drag-over');
+
+            if (draggedIndex === null || draggedIndex === targetIndex) return;
+
+            let list = toArray(localSezonlar);
+            const draggedItem = list.splice(draggedIndex, 1)[0];
+            list.splice(targetIndex, 0, draggedItem);
+
+            localSezonlar = list;
+            db.ref('sezonlarDB').set(localSezonlar);
+        }
+
+        function dragEnd(e) {
+            e.currentTarget.classList.remove('dragging');
+            draggedIndex = null;
+        }
+
+        function sezonlariSirala(tur) {
+            let list = toArray(localSezonlar);
+            if (tur === 'AZ') {
+                list.sort((a, b) => String(a).localeCompare(String(b), undefined, {numeric: true}));
+            } else if (tur === 'ZA') {
+                list.sort((a, b) => String(b).localeCompare(String(a), undefined, {numeric: true}));
+            }
+            localSezonlar = list;
+            db.ref('sezonlarDB').set(localSezonlar);
         }
 
         function sezonEkle() { 
             const v = document.getElementById('yeniSezon').value.trim(); 
             if(v) { 
                 let list = toArray(localSezonlar);
-                list.push(v);
-                localSezonlar = list;
-                db.ref('sezonlarDB').set(localSezonlar); 
+                if(!list.includes(v)) {
+                    list.push(v);
+                    localSezonlar = list;
+                    db.ref('sezonlarDB').set(localSezonlar); 
+                }
                 document.getElementById('yeniSezon').value = ""; 
             } 
         }
+
+        function sezonSil(sezonDegeri) {
+            let list = toArray(localSezonlar).filter(s => String(s) !== String(sezonDegeri));
+            localSezonlar = list;
+            db.ref('sezonlarDB').set(localSezonlar);
+        }
         
         function listeElemanSil(dbPath, index) {
-            let arr = toArray(dbPath === 'araclarDB' ? localAraclar : dbPath === 'aboneliklerDB' ? localAbonelikler : dbPath === 'kisilerDB' ? localKisiler : localSezonlar);
+            let arr = toArray(dbPath === 'araclarDB' ? localAraclar : dbPath === 'aboneliklerDB' ? localAbonelikler : localKisiler);
             arr.splice(index, 1);
             db.ref(dbPath).set(arr);
         }
