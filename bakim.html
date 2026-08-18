@@ -261,7 +261,7 @@
                     const item = tumBakimlar[key];
 
                     let actionsHtml = "";
-                    if (userPermission !== "oku" && item.ekleyen === currentUser) {
+                    if (userPermission !== "oku" && (currentUser.toLowerCase() === 'admin' || item.ekleyen === currentUser)) {
                         actionsHtml = `
                             <div class="actions-box">
                                 <button class="btn-edit" onclick="kayitDuzenle('${key}')">✏️ Düzenle</button>
@@ -292,8 +292,8 @@
             if (userPermission === "oku") return alert("Salt okunur moddasınız!");
             
             const silinen = tumBakimlar[key];
-            if (silinen && silinen.ekleyen && silinen.ekleyen !== currentUser) {
-                return alert(`Bu kaydı yalnızca oluşturan kişi (${silinen.ekleyen}) silebilir!`);
+            if (currentUser.toLowerCase() !== 'admin' && silinen && silinen.ekleyen && silinen.ekleyen !== currentUser) {
+                return alert(`Bu kaydı yalnızca yönetici (admin) veya oluşturan kişi (${silinen.ekleyen}) silebilir!`);
             }
 
             if (confirm("Bu bakım kaydını silmek istediğinize emin misiniz?")) {
@@ -309,8 +309,8 @@
             const data = tumBakimlar[key];
             if (!data) return;
 
-            if (data.ekleyen && data.ekleyen !== currentUser) {
-                return alert(`Bu kaydı yalnızca oluşturan kişi (${data.ekleyen}) düzenleyebilir!`);
+            if (currentUser.toLowerCase() !== 'admin' && data.ekleyen && data.ekleyen !== currentUser) {
+                return alert(`Bu kaydı yalnızca yönetici (admin) veya oluşturan kişi (${data.ekleyen}) düzenleyebilir!`);
             }
 
             document.getElementById('editKey').value = key;

@@ -300,7 +300,7 @@
                     const imgHtml = item.foto ? `<img src="${item.foto}" class="img-thumb" onclick="window.open('${item.foto}')">` : '';
 
                     let actionsHtml = "";
-                    if (userPermission !== "oku" && item.ekleyen === currentUser) {
+                    if (userPermission !== "oku" && (currentUser.toLowerCase() === 'admin' || item.ekleyen === currentUser)) {
                         actionsHtml = `
                             <div class="actions-box">
                                 <button class="btn-edit" onclick="kayitDuzenle('${key}')">✏️ Düzenle</button>
@@ -342,8 +342,8 @@
             if (userPermission === "oku") return alert("Salt okunur moddasınız!");
             
             const silinen = tumAracMasraflari[key];
-            if (silinen && silinen.ekleyen && silinen.ekleyen !== currentUser) {
-                return alert(`Bu kaydı yalnızca oluşturan kişi (${silinen.ekleyen}) silebilir!`);
+            if (currentUser.toLowerCase() !== 'admin' && silinen && silinen.ekleyen && silinen.ekleyen !== currentUser) {
+                return alert(`Bu kaydı yalnızca yönetici (admin) veya oluşturan kişi (${silinen.ekleyen}) silebilir!`);
             }
 
             if (confirm("Bu araç masrafını silmek istediğinize emin misiniz?")) {
@@ -359,8 +359,8 @@
             const data = tumAracMasraflari[key];
             if (!data) return;
 
-            if (data.ekleyen && data.ekleyen !== currentUser) {
-                return alert(`Bu kaydı yalnızca oluşturan kişi (${data.ekleyen}) düzenleyebilir!`);
+            if (currentUser.toLowerCase() !== 'admin' && data.ekleyen && data.ekleyen !== currentUser) {
+                return alert(`Bu kaydı yalnızca yönetici (admin) veya oluşturan kişi (${data.ekleyen}) düzenleyebilir!`);
             }
 
             document.getElementById('editKey').value = key;

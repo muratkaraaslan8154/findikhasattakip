@@ -364,7 +364,7 @@
                     const d = tumKayıtlar[key];
 
                     let actionsHtml = "";
-                    if (userPermission !== "oku" && d.ekleyen === currentUser) {
+                    if (userPermission !== "oku" && (currentUser.toLowerCase() === 'admin' || d.ekleyen === currentUser)) {
                         actionsHtml = `
                             <div class="actions-box">
                                 <button class="btn-edit" onclick="kayitDuzenle('${key}')">✏️ Düzenle</button>
@@ -396,8 +396,8 @@
             if (userPermission === "oku") return alert("Salt okunur moddasınız!");
 
             const silinen = tumKayıtlar[key];
-            if (silinen && silinen.ekleyen && silinen.ekleyen !== currentUser) {
-                return alert(`Bu kaydı yalnızca oluşturan kişi (${silinen.ekleyen}) silebilir!`);
+            if (currentUser.toLowerCase() !== 'admin' && silinen && silinen.ekleyen && silinen.ekleyen !== currentUser) {
+                return alert(`Bu kaydı yalnızca yönetici (admin) veya oluşturan kişi (${silinen.ekleyen}) silebilir!`);
             }
 
             if (confirm("Bu gübre/ilaç kaydını silmek istediğinize emin misiniz?")) {
@@ -413,8 +413,8 @@
             const data = tumKayıtlar[key];
             if (!data) return;
 
-            if (data.ekleyen && data.ekleyen !== currentUser) {
-                return alert(`Bu kaydı yalnızca oluşturan kişi (${data.ekleyen}) düzenleyebilir!`);
+            if (currentUser.toLowerCase() !== 'admin' && data.ekleyen && data.ekleyen !== currentUser) {
+                return alert(`Bu kaydı yalnızca yönetici (admin) veya oluşturan kişi (${data.ekleyen}) düzenleyebilir!`);
             }
 
             document.getElementById('editKey').value = key;
