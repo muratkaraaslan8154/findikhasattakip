@@ -25,6 +25,7 @@
         .form-group { margin-bottom: 12px; }
         label { display: block; font-size: 0.85rem; font-weight: bold; margin-bottom: 5px; color: #4a5568;}
         input, select, textarea { width: 100%; padding: 10px; border: 1px solid #cbd5e0; border-radius: 6px; box-sizing: border-box; font-size: 0.95rem; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         
         .btn-save { background: #e53e3e; color: white; width: 100%; padding: 12px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 1rem; margin-top: 5px; }
         .btn-cancel { background: #a0aec0; color: white; border: none; padding: 8px; width: 100%; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 0.9rem; margin-top: 8px; display: none;}
@@ -33,6 +34,8 @@
         .history-card { background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; margin-bottom: 10px; }
         .history-header { display: flex; justify-content: space-between; font-weight: bold; border-bottom: 1px dashed #cbd5e0; padding-bottom: 5px; margin-bottom: 8px; font-size: 0.9rem;}
         .history-body { font-size: 0.85rem; color: #4a5568; display: grid; grid-template-columns: 1fr 1fr; gap: 5px;}
+        .total-badge { background: #feebc8; color: #c05621; padding: 4px 8px; border-radius: 4px; font-weight: bold; display: inline-block; margin-top: 5px; font-size: 0.85rem;}
+        
         .actions-box { grid-column: span 2; display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px; border-top: 1px solid #edf2f7; padding-top: 6px; }
         .btn-edit { background: #3182ce; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 0.75rem; }
         .btn-del { background: #e53e3e; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 0.75rem; }
@@ -62,6 +65,7 @@
         </div>
 
         <div id="formContainer">
+            <!-- Bakım Bilgileri Bölümü -->
             <div class="form-section">
                 <div class="form-group">
                     <label>Bakım Türü:</label>
@@ -81,8 +85,8 @@
                 </div>
 
                 <div class="form-group">
-                    <label>Tutar (TL):</label>
-                    <input type="number" id="bakimTutar" placeholder="0.00">
+                    <label>Bakım Ücreti / Masrafı (TL):</label>
+                    <input type="number" id="bakimTutar" placeholder="0.00" oninput="toplamHesapla()">
                 </div>
 
                 <div class="form-group">
@@ -94,7 +98,49 @@
                     <label>Açıklama / Detaylar:</label>
                     <textarea id="bakimAciklama" rows="2" placeholder="Örn: 2 yevmiye budamacı çalıştırıldı..."></textarea>
                 </div>
+            </div>
 
+            <!-- Kullanılan Araç ve Yol Masrafı Bölümü -->
+            <div class="form-section">
+                <div class="form-group">
+                    <label>Kullanılan Araç:</label>
+                    <select id="aracPlaka"></select>
+                </div>
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label>Yapılan KM:</label>
+                        <input type="number" id="yapilanKm" placeholder="KM" oninput="yolMasrafiHesapla()">
+                    </div>
+                    <div class="form-group">
+                        <label>Ort. Tüketim (L/100km):</label>
+                        <input type="number" id="ortTuketim" placeholder="Örn: 6.5" step="0.1" oninput="yolMasrafiHesapla()">
+                    </div>
+                </div>
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label>Hesaplanan Litre:</label>
+                        <input type="number" id="yolLitre" placeholder="Litre" readonly style="background:#edf2f7;">
+                    </div>
+                    <div class="form-group">
+                        <label>Yakıt Litre Fiyatı (TL):</label>
+                        <input type="number" id="yolLitreFiyat" placeholder="Örn: 42.50" step="0.1" oninput="yolMasrafiHesapla()">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Hesaplanan Yol Masrafı (TL):</label>
+                    <input type="number" id="yolMasrafi" placeholder="0.00" readonly style="background:#e2e8f0; font-weight:bold;">
+                </div>
+                <div class="form-group">
+                    <label>Yol Güzergahı / Açıklama:</label>
+                    <input type="text" id="yolAciklama" placeholder="Örn: Ev - Bahçe arası git-gel">
+                </div>
+            </div>
+
+            <!-- Kaydetme ve Toplam Göstergesi -->
+            <div class="form-section">
+                <div style="text-align: right; margin-bottom: 10px;">
+                    <span class="total-badge" id="genelToplamGösterge">Toplam Masraf: 0 TL</span>
+                </div>
                 <button class="btn-save" id="btnKaydet" onclick="bakimKaydet()">Verileri Kaydet</button>
                 <button class="btn-cancel" id="btnIptal" onclick="formuSifirla()">İptal Et</button>
             </div>
@@ -202,22 +248,75 @@
             if (varsayilanlar.kisi) select.value = varsayilanlar.kisi;
         });
 
+        db.ref('araclarDB').on('value', (snapshot) => {
+            const list = snapshot.val() || [];
+            const select = document.getElementById('aracPlaka');
+            select.innerHTML = '<option value="">Araç Seçin...</option>';
+            const arr = Array.isArray(list) ? list : Object.values(list);
+            arr.forEach(a => {
+                const plaka = (typeof a === 'object' && a !== null) ? (a.plaka || a.arac || a.adi || Object.values(a)[0] || '') : a;
+                if (plaka) select.innerHTML += `<option value="${plaka}">${plaka}</option>`;
+            });
+            if (varsayilanlar.arac) select.value = varsayilanlar.arac;
+        });
+
+        function yolMasrafiHesapla() {
+            const km = parseFloat(document.getElementById('yapilanKm').value) || 0;
+            const tuketim = parseFloat(document.getElementById('ortTuketim').value) || 0;
+            const litreFiyat = parseFloat(document.getElementById('yolLitreFiyat').value) || 0;
+
+            if (km > 0 && tuketim > 0) {
+                const hesaplananLitre = (km * tuketim) / 100;
+                document.getElementById('yolLitre').value = hesaplananLitre.toFixed(2);
+
+                if (litreFiyat > 0) {
+                    const toplamYolMasrafi = hesaplananLitre * litreFiyat;
+                    document.getElementById('yolMasrafi').value = toplamYolMasrafi.toFixed(2);
+                } else {
+                    document.getElementById('yolMasrafi').value = "";
+                }
+            } else {
+                document.getElementById('yolLitre').value = "";
+                document.getElementById('yolMasrafi').value = "";
+            }
+            toplamHesapla();
+        }
+
+        function toplamHesapla() {
+            const bakim = parseFloat(document.getElementById('bakimTutar').value) || 0;
+            const yol = parseFloat(document.getElementById('yolMasrafi').value) || 0;
+            const genel = bakim + yol;
+            document.getElementById('genelToplamGösterge').innerText = `Toplam Masraf: ${genel.toFixed(2)} TL`;
+        }
+
         function bakimKaydet() {
             if (userPermission === "oku") return alert("Salt okunur moddasınız!");
 
-            const tutar = parseFloat(document.getElementById('bakimTutar').value) || 0;
+            const bakimTutar = parseFloat(document.getElementById('bakimTutar').value) || 0;
+            const yolMasrafi = parseFloat(document.getElementById('yolMasrafi').value) || 0;
             const tur = document.getElementById('bakimTurSelect').value;
             const tarih = document.getElementById('bakimTarih').value;
             const editKey = document.getElementById('editKey').value;
 
             if (!tarih) return alert("Lütfen tarihi seçiniz!");
-            if (tutar <= 0) return alert("Lütfen geçerli bir tutar girin!");
+            if (bakimTutar <= 0 && yolMasrafi <= 0) return alert("En az bir masraf kalemini (Bakım veya Yol) giriniz!");
+
+            const toplamMasraf = bakimTutar + yolMasrafi;
 
             const kayitData = {
                 tur: tur,
                 odeyen: document.getElementById('kisiSelect').value,
                 sezon: document.getElementById('sezonSecici').value,
-                tutar: tutar,
+                bakimTutar: bakimTutar,
+                yolMasrafi: yolMasrafi,
+                tutar: toplamMasraf,
+                toplamMasraf: toplamMasraf,
+                aracPlaka: document.getElementById('aracPlaka').value,
+                yapilanKm: parseFloat(document.getElementById('yapilanKm').value) || 0,
+                ortTuketim: parseFloat(document.getElementById('ortTuketim').value) || 0,
+                yolLitre: parseFloat(document.getElementById('yolLitre').value) || 0,
+                yolLitreFiyat: parseFloat(document.getElementById('yolLitreFiyat').value) || 0,
+                yolAciklama: document.getElementById('yolAciklama').value.trim(),
                 tarih: tarih,
                 aciklama: document.getElementById('bakimAciklama').value.trim(),
                 ekleyen: currentUser
@@ -227,7 +326,7 @@
                 db.ref('bakimMasraflariDB/' + editKey).set(kayitData, (error) => {
                     if (!error) {
                         alert("Bakım kaydı başarıyla güncellendi.");
-                        logEkle("Bakım Masrafı Güncellendi", `${tutar.toFixed(2)} TL - ${tur}`);
+                        logEkle("Bakım Masrafı Güncellendi", `${toplamMasraf.toFixed(2)} TL - ${tur}`);
                         formuSifirla();
                     }
                 });
@@ -235,7 +334,7 @@
                 db.ref('bakimMasraflariDB').push(kayitData, (error) => {
                     if (!error) {
                         alert("Bakım masrafı başarıyla kaydedildi.");
-                        logEkle("Bakım Masrafı Eklendi", `${tutar.toFixed(2)} TL - ${tur}`);
+                        logEkle("Bakım Masrafı Eklendi", `${toplamMasraf.toFixed(2)} TL - ${tur}`);
                         formuSifirla();
                     }
                 });
@@ -262,7 +361,6 @@
                     const item = tumBakimlar[key];
                     const temizEkleyen = item.ekleyen ? item.ekleyen.trim().toLowerCase() : "";
 
-                    // Admin, murat, kaydı oluşturan veya ekleyen bilgisi boş/eski olan kayıtlar için yetki ver
                     const isAuthorized = temizUser === 'admin' || temizUser === 'murat' || temizEkleyen === temizUser || temizEkleyen === "";
 
                     let actionsHtml = "";
@@ -275,15 +373,19 @@
                         `;
                     }
 
+                    const gösterilenTutar = item.toplamMasraf !== undefined ? item.toplamMasraf : (item.tutar || 0);
+
                     container.innerHTML += `
                         <div class="history-card">
                             <div class="history-header">
                                 <span>📅 ${item.tarih}</span>
-                                <span style="color:#e53e3e;">💰 ${item.tutar ? item.tutar.toFixed(2) : 0} TL</span>
+                                <span style="color:#e53e3e;">💰 ${gösterilenTutar.toFixed(2)} TL</span>
                             </div>
                             <div class="history-body">
                                 <div><b>Bakım Türü:</b> ${item.tur || '-'}</div>
                                 <div><b>Ödeyen:</b> ${item.odeyen || '-'}</div>
+                                <div><b>Bakım Ücreti:</b> ${item.bakimTutar !== undefined ? item.bakimTutar.toFixed(2) : (item.tutar || 0)} TL</div>
+                                <div><b>Yol Masrafı:</b> ${item.aracPlaka ? item.aracPlaka + ' (' + (item.yolMasrafi || 0) + ' TL)' : '-'}</div>
                                 <div style="grid-column: span 2;"><b>Açıklama:</b> ${item.aciklama || '-'}</div>
                             </div>
                             ${actionsHtml}
@@ -327,9 +429,19 @@
             document.getElementById('editKey').value = key;
             document.getElementById('bakimTurSelect').value = data.tur || '';
             document.getElementById('kisiSelect').value = data.odeyen || '';
-            document.getElementById('bakimTutar').value = data.tutar || '';
+            document.getElementById('bakimTutar').value = data.bakimTutar !== undefined ? data.bakimTutar : (data.tutar || '');
             document.getElementById('bakimTarih').value = data.tarih || '';
             document.getElementById('bakimAciklama').value = data.aciklama || '';
+
+            document.getElementById('aracPlaka').value = data.aracPlaka || '';
+            document.getElementById('yapilanKm').value = data.yapilanKm || '';
+            document.getElementById('ortTuketim').value = data.ortTuketim || '';
+            document.getElementById('yolLitre').value = data.yolLitre || '';
+            document.getElementById('yolLitreFiyat').value = data.yolLitreFiyat || '';
+            document.getElementById('yolMasrafi').value = data.yolMasrafi || '';
+            document.getElementById('yolAciklama').value = data.yolAciklama || '';
+
+            toplamHesapla();
 
             document.getElementById('btnKaydet').innerText = "Değişikliği Geçmişe İşle ve Kaydet";
             document.getElementById('btnKaydet').style.background = "#dd6b20";
@@ -342,11 +454,13 @@
             document.getElementById('btnKaydet').innerText = "Verileri Kaydet";
             document.getElementById('btnKaydet').style.background = "#e53e3e";
             document.getElementById('btnIptal').style.display = "none";
-            ['bakimTutar', 'bakimAciklama'].forEach(id => document.getElementById(id).value = "");
+            ['bakimTutar', 'bakimAciklama', 'yapilanKm', 'ortTuketim', 'yolLitre', 'yolLitreFiyat', 'yolMasrafi', 'yolAciklama'].forEach(id => document.getElementById(id).value = "");
             document.getElementById('bakimTarih').valueAsDate = new Date();
 
             if (varsayilanlar.sezon) document.getElementById('sezonSecici').value = varsayilanlar.sezon;
             if (varsayilanlar.kisi) document.getElementById('kisiSelect').value = varsayilanlar.kisi;
+            if (varsayilanlar.arac) document.getElementById('aracPlaka').value = varsayilanlar.arac;
+            toplamHesapla();
         }
     </script>
 </body>
