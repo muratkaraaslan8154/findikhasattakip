@@ -3,76 +3,91 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bakım & Onarım Masrafları</title>
-    <script>if (localStorage.getItem('isLoggedIn') !== 'true') window.location.replace('giris.html');</script>
+    <title>Fındık ve Ağaç Bakım Masrafları</title>
+    
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
 
+    <script>
+        if (localStorage.getItem('isLoggedIn') !== 'true') {
+            window.location.replace('giris.html');
+        }
+    </script>
+
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
-        body { font-family: 'Roboto', sans-serif; background-color: #f4f6f9; padding: 1rem; display: flex; flex-direction: column; align-items: center; }
-        .container { width: 100%; max-width: 600px; background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
-        h2 { color: #dd6b20; margin-top: 0; border-bottom: 2px solid #dd6b20; padding-bottom: 10px; }
-        .form-section { background: #f7fafc; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #dd6b20; }
+        body { font-family: 'Roboto', sans-serif; background-color: #f4f6f9; padding: 1.5rem 1rem; display: flex; flex-direction: column; align-items: center; margin:0; }
+        .container { width: 100%; max-width: 650px; background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        h2 { border-bottom: 2px solid #e53e3e; padding-bottom: 10px; color: #2d3748; margin-top: 0; display: flex; justify-content: space-between; align-items: center; font-size: 1.3rem;}
+        .form-section { background: #fff5f5; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #e53e3e; }
         .form-group { margin-bottom: 12px; }
         label { display: block; font-size: 0.85rem; font-weight: bold; margin-bottom: 5px; color: #4a5568;}
-        input, select { width: 100%; padding: 10px; border: 1px solid #cbd5e0; border-radius: 6px; box-sizing: border-box; font-size: 0.95rem; }
-        .row { display: flex; gap: 10px; } .row > div { flex: 1; }
-        .btn-save { background: #dd6b20; color: white; width: 100%; padding: 14px; border: none; border-radius: 6px; font-weight: bold; font-size: 1rem; cursor: pointer; }
-        .btn-cancel { background: #a0aec0; margin-top: 8px; display: none; }
+        input, select { width: 100%; padding: 9px; border: 1px solid #cbd5e0; border-radius: 6px; box-sizing: border-box; font-size: 0.9rem; }
+        .btn { background: #e53e3e; color: white; width: 100%; padding: 10px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; transition: background 0.2s; font-size: 0.95rem; margin-top: 5px;}
+        .btn:hover { opacity: 0.9; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { text-align: left; padding: 8px; border-bottom: 1px solid #e2e8f0; font-size: 0.82rem; }
+        th { background-color: #edf2f7; color: #4a5568; }
+        .btn-del { background: #e53e3e; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 0.75rem; }
         .btn-back { display: block; text-align: center; margin-top: 20px; color: #718096; text-decoration: none; font-weight: 500;}
-        .record-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; margin-bottom: 10px; font-size: 0.88rem; }
-        .record-header { display: flex; justify-content: space-between; font-weight: bold; color: #dd6b20; border-bottom: 1px solid #edf2f7; padding-bottom: 6px; margin-bottom: 8px; }
-        .btn-sm { padding: 4px 8px; font-size: 0.75rem; border-radius: 4px; border: none; cursor: pointer; font-weight: bold; }
-        .btn-edit { background: #3182ce; color: white; }
-        .btn-history { background: #dd6b20; color: white; margin-left: 5px; }
-        .history-box { background: #fffaf0; border-left: 3px solid #dd6b20; padding: 8px; margin-top: 8px; font-size: 0.8rem; display: none; border-radius: 4px; color: #7b341e; }
-        .log-item { border-bottom: 1px dashed #cbd5e0; padding: 4px 0; }
+        .read-only-notice { display: none; background: #feebc8; color: #744210; padding: 10px; border-radius: 6px; font-weight: bold; font-size: 0.85rem; text-align: center; margin-bottom: 15px; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h2>🛠️ Bakım & Onarım Masrafı</h2>
-        <input type="hidden" id="editKey">
+        <h2>🪚 Ağaç & Bahçe Bakımı <span id="userTag" style="font-size:0.8rem; font-weight:normal; color:#718096;"></span></h2>
+        
+        <div id="readOnlyNotice" class="read-only-notice">👁️ Bu sayfada sadece görüntüleme yetkiniz bulunmaktadır.</div>
 
-        <div class="form-section">
-            <div class="row">
-                <div class="form-group"><label>Sezon (Yıl)</label><select id="sezonSecici"></select></div>
-                <div class="form-group"><label>Tarih</label><input type="date" id="tarih"></div>
+        <div class="form-section" id="bakimFormArea">
+            <h3 style="margin-top:0; font-size:1rem; color:#c53030;">Yeni Bakım / Onarım Kaydı</h3>
+            <div class="form-group">
+                <label>Bakım Kalemi / Türü:</label>
+                <select id="bakimTurSelect">
+                    <option value="🪚 Motorlu Testere Benzin / Yağ / Zincir">🪚 Motorlu Testere Benzin / Yağ / Zincir</option>
+                    <option value="✂️ Ağaç Budama & Filiz Alma Yevmiyesi">✂️ Ağaç Budama & Filiz Alma Yevmiyesi</option>
+                    <option value="🧪 Zirai İlaç & İlaçlama İşçiliği">🧪 Zirai İlaç & İlaçlama İşçiliği</option>
+                    <option value="🌾 Dal Kesme / Dip Temizliği">🌾 Dal Kesme / Dip Temizliği</option>
+                    <option value="🛠️ Alet & Edavat Tamir / Alım">🛠️ Alet & Edavat Tamir / Alım</option>
+                    <option value="📋 Diğer Zirai Giderler">📋 Diğer Zirai Giderler</option>
+                </select>
             </div>
-            <div class="form-group"><label>Alet / Ekipman Adı</label><input type="text" id="ekipmanAdi" placeholder="Örn: Patos Motoru, Hızar, Tırpan, Traktör"></div>
-            <div class="form-group"><label>Yapılan İşlem / Değişen Parça</label><input type="text" id="yapilanIslem" placeholder="Örn: Buji ve filtre değişimi, bıçak bileme"></div>
-            <div class="row">
-                <div class="form-group"><label>Yedek Parça / Malzeme (TL)</label><input type="number" id="parcaTutar" placeholder="0.00"></div>
-                <div class="form-group"><label>Usta / Servis İşçilik (TL)</label><input type="number" id="ustaUcreti" placeholder="0.00"></div>
+            <div style="display: flex; gap: 10px;">
+                <div class="form-group" style="flex:1;">
+                    <label>Ödeyen Kişi:</label>
+                    <select id="kisiSelect"></select>
+                </div>
+                <div class="form-group" style="flex:1;">
+                    <label>Sezon:</label>
+                    <select id="sezonSelect"></select>
+                </div>
             </div>
+            <div style="display: flex; gap: 10px;">
+                <div class="form-group" style="flex:1;">
+                    <label>Tutar (TL):</label>
+                    <input type="number" step="0.01" id="bakimTutar" placeholder="0.00">
+                </div>
+                <div class="form-group" style="flex:1;">
+                    <label>Tarih:</label>
+                    <input type="date" id="bakimTarih">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Açıklama / Detay:</label>
+                <input type="text" id="bakimAciklama" placeholder="Örn: 2 Litre motor yağı ve yeni pala zinciri alındı">
+            </div>
+            <button class="btn" id="btnKaydet" onclick="bakimKaydet()">Masrafı Kaydet</button>
         </div>
 
-        <!-- 🚗 SANAYİ / SERVİS GİDİŞ - GELİŞ YOL MASRAFI -->
-        <div class="form-section" style="border-left-color: #805ad5;">
-            <label style="color: #2d3748; font-size: 0.95rem; margin-bottom: 10px; display: block; font-weight: bold;">🚗 Sanayi / Servis Yol Masrafı</label>
-            <div class="form-group"><label>Araç Plakası</label><select id="aracPlaka"></select></div>
-            <div class="row">
-                <div class="form-group"><label>Yapılan KM</label><input type="number" id="yapilanKm" placeholder="Örn: 40" oninput="yolHesapla()"></div>
-                <div class="form-group"><label>Ort. Tüketim (L/100 KM)</label><input type="number" id="ortTuketim" placeholder="Örn: 7.5" step="0.1" oninput="yolHesapla()"></div>
-            </div>
-            <div class="row">
-                <div class="form-group"><label>Harcanan Yakıt Litresi</label><input type="number" id="yolLitre" placeholder="Otomatik/Manuel" step="0.1" oninput="yolHesapla()"></div>
-                <div class="form-group"><label>Litre Fiyatı (TL)</label><input type="number" id="yolLitreFiyat" placeholder="Örn: 44.5" step="0.1" oninput="yolHesapla()"></div>
-            </div>
-            <div class="form-group"><label>Otomatik Tutar (TL)</label><input type="number" id="yolMasrafi" placeholder="0.00" readonly style="background:#edf2f7; font-weight:bold;"></div>
-            <div class="form-group"><label>Yol / Araç Açıklaması</label><input type="text" id="yolAciklama" placeholder="Örn: Sanayiye makine taşıma yakıtı..."></div>
+        <h3 style="font-size: 1rem; color: #2d3748; margin: 15px 0 5px 0;">Bakım Masraf Geçmişi</h3>
+        <div style="overflow-x: auto;">
+            <table>
+                <thead>
+                    <tr><th>Tarih</th><th>Bakım Türü</th><th>Ödeyen</th><th>Tutar</th><th>Açıklama</th><th class="action-col">İşlem</th></tr>
+                </thead>
+                <tbody id="bakimTableBody"></tbody>
+            </table>
         </div>
-
-        <div class="form-section" style="border-left-color: #e53e3e;">
-            <div class="form-group"><label>💰 Ödemeyi Yapan Alacaklı</label><select id="odeyenKisi"></select></div>
-        </div>
-
-        <button class="btn-save" id="btnKaydet" onclick="kaydet()">Verileri Kaydet</button>
-        <button class="btn-save btn-cancel" id="btnIptal" onclick="formuSifirla()">İptal / Yeni Kayıt</button>
-
-        <h3 style="color: #2d3748; margin-top: 25px; font-size: 1.1rem;">📋 Kayıtlı Bakım & Onarım İşlemleri</h3>
-        <div id="kayitListesi">Yükleniyor...</div>
 
         <a href="index.html" class="btn-back">← Ana Menüye Dön</a>
     </div>
@@ -87,176 +102,94 @@
             messagingSenderId: "296913243470",
             appId: "1:296913243470:web:f2a6cfed4196ff44e0221f"
         };
+
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        let lokalDB = {};
-        document.getElementById('tarih').valueAsDate = new Date();
+        const currentUser = localStorage.getItem('currentUser') || "";
+        document.getElementById('userTag').innerText = "(" + currentUser + ")";
+        document.getElementById('bakimTarih').valueAsDate = new Date();
 
-        let varsayilanlar = {};
-        let sezonlar = [];
-        let kisiler = [];
-        let araclar = [];
+        let userPermission = "tam";
 
-        db.ref('varsayilanlarDB').on('value', (s) => { varsayilanlar = s.val() || {}; doldurSezonlar(); doldurKisiler(); doldurAraclar(); });
-        db.ref('sezonlarDB').on('value', (s) => { sezonlar = s.val() || []; doldurSezonlar(); });
-        db.ref('kisilerDB').on('value', (s) => { kisiler = s.val() || []; doldurKisiler(); });
-        db.ref('araclarDB').on('value', (s) => { araclar = s.val() || []; doldurAraclar(); });
-        db.ref('islemler/bakim').on('value', (s) => { lokalDB = s.val() || {}; listeyiCiz(); });
-
-        function doldurSezonlar() {
-            const select = document.getElementById('sezonSecici');
-            const ms = select.value; select.innerHTML = "";
-            [...sezonlar].sort().reverse().forEach(s => select.innerHTML += `<option value="${s}">${s}</option>`);
-            if (ms && [...select.options].some(o => o.value === ms)) select.value = ms;
-            else if (varsayilanlar.sezon) select.value = varsayilanlar.sezon;
-        }
-
-        function doldurKisiler() {
-            const select = document.getElementById('odeyenKisi');
-            const ms = select.value; select.innerHTML = '<option value="">-- Ödeyen Seçin --</option>';
-            kisiler.forEach(k => select.innerHTML += `<option value="${k}">${k}</option>`);
-            if (ms && [...select.options].some(o => o.value === ms)) select.value = ms;
-            else if (varsayilanlar.kisi) select.value = varsayilanlar.kisi;
-        }
-
-        function doldurAraclar() {
-            const select = document.getElementById('aracPlaka');
-            const ms = select.value; select.innerHTML = '<option value="">-- Araç Seçin --</option>';
-            araclar.forEach(a => select.innerHTML += `<option value="${a}">${a}</option>`);
-            if (ms && [...select.options].some(o => o.value === ms)) select.value = ms;
-            else if (varsayilanlar.arac) select.value = varsayilanlar.arac;
-        }
-
-        function yolHesapla() {
-            let km = Number(document.getElementById('yapilanKm').value) || 0;
-            let ort = Number(document.getElementById('ortTuketim').value) || 0;
-            let fiyat = Number(document.getElementById('yolLitreFiyat').value) || 0;
-            let litreInput = document.getElementById('yolLitre');
-            if (km > 0 && ort > 0) litreInput.value = ((km * ort) / 100).toFixed(2);
-            let litre = Number(litreInput.value) || 0;
-            if (litre > 0 && fiyat > 0) document.getElementById('yolMasrafi').value = (litre * fiyat).toFixed(2);
-        }
-
-        function listeyiCiz() {
-            const listeDiv = document.getElementById('kayitListesi');
-            listeDiv.innerHTML = "";
-            const keys = Object.keys(lokalDB).reverse();
-            if (keys.length === 0) { listeDiv.innerHTML = "<p style='color:#718096;'>Kayıt yok.</p>"; return; }
-
-            keys.forEach(key => {
-                const item = lokalDB[key];
-                const cur = item.current || item;
-                let toplamTutar = (cur.parcaTutar || 0) + (cur.ustaUcreti || 0) + (cur.yolMasrafi || 0);
-
-                let historyHTML = "";
-                if (item.history) {
-                    Object.values(item.history).reverse().forEach(log => {
-                        historyHTML += `<div class="log-item"><b>[${log.zaman}]</b> ${log.kullanici}: <br>${log.degisiklik}</div>`;
-                    });
-                } else { historyHTML = "<div class='log-item'>Geçmiş yok.</div>"; }
-
-                listeDiv.innerHTML += `
-                    <div class="record-card">
-                        <div class="record-header">
-                            <span>🛠️ ${cur.ekipmanAdi || 'Bakım/Onarım'} (${cur.sezon})</span>
-                            <span>💰 ${toplamTutar.toFixed(2)} TL</span>
-                        </div>
-                        <div><b>Tarih:</b> ${cur.tarih} | <b>İşlem:</b> ${cur.yapilanIslem || '-'}</div>
-                        <div><b>Parça:</b> ${cur.parcaTutar || 0} TL | <b>Usta:</b> ${cur.ustaUcreti || 0} TL</div>
-                        <div><b>Yol Yakıtı:</b> ${cur.yolMasrafi || 0} TL (${cur.aracPlaka || 'Araçsız'}) | <b>Ödeyen:</b> ${cur.odeyen}</div>
-                        <div style="margin-top:8px;">
-                            <button class="btn-sm btn-edit" onclick="duzenle('${key}')">✏️ Düzenle</button>
-                            <button class="btn-sm btn-history" onclick="gecmisAcKapa('${key}')">📜 Geçmişi Gör</button>
-                        </div>
-                        <div id="hist_${key}" class="history-box"><strong>🕒 Değişiklik Günlüğü:</strong>${historyHTML}</div>
-                    </div>`;
-            });
-        }
-
-        function kaydet() {
-            const editKey = document.getElementById('editKey').value;
-            const yeniVeri = {
-                modul: "Bakım",
-                sezon: document.getElementById('sezonSecici').value,
-                tarih: document.getElementById('tarih').value,
-                ekipmanAdi: document.getElementById('ekipmanAdi').value,
-                yapilanIslem: document.getElementById('yapilanIslem').value,
-                parcaTutar: Number(document.getElementById('parcaTutar').value),
-                ustaUcreti: Number(document.getElementById('ustaUcreti').value),
-                aracPlaka: document.getElementById('aracPlaka').value,
-                yapilanKm: Number(document.getElementById('yapilanKm').value),
-                ortTuketim: Number(document.getElementById('ortTuketim').value),
-                yolLitre: Number(document.getElementById('yolLitre').value),
-                yolLitreFiyat: Number(document.getElementById('yolLitreFiyat').value),
-                yolMasrafi: Number(document.getElementById('yolMasrafi').value),
-                yolAciklama: document.getElementById('yolAciklama').value,
-                odeyen: document.getElementById('odeyenKisi').value,
-                zamanDamgasi: new Date().getTime()
-            };
-
-            const aktifKullanici = localStorage.getItem('currentUser') || "Sistem Kullanıcısı";
-
-            if (editKey) {
-                const eskiVeri = (lokalDB[editKey].current || lokalDB[editKey]);
-                let farklar = [];
-                for (let p in yeniVeri) {
-                    if (p !== 'zamanDamgasi' && eskiVeri[p] !== yeniVeri[p]) farklar.push(`${p}: (${eskiVeri[p] || 'boş'} ➔ ${yeniVeri[p] || 'boş'})`);
-                }
-                if (farklar.length > 0) {
-                    db.ref(`islemler/bakim/${editKey}/current`).set(yeniVeri);
-                    db.ref(`islemler/bakim/${editKey}/history`).push({
-                        zaman: new Date().toLocaleString('tr-TR'),
-                        kullanici: aktifKullanici,
-                        degisiklik: farklar.join(", ") + " güncellendi."
-                    });
-                    alert("Bakım kaydı güncellendi!");
-                }
-            } else {
-                db.ref('islemler/bakim').push().set({ current: yeniVeri });
-                alert("Bakım kaydı eklendi!");
+        // YETKİ KONTROLÜ
+        db.ref('usersDB/' + currentUser + '/permissions/bakim').on('value', (s) => {
+            userPermission = s.val() || "tam";
+            if (userPermission === "yok") {
+                alert("Bu sayfaya erişim yetkiniz bulunmamaktadır!");
+                window.location.replace('index.html');
+            } else if (userPermission === "oku") {
+                document.getElementById('bakimFormArea').style.display = 'none';
+                document.getElementById('readOnlyNotice').style.display = 'block';
+                renderBakimMasraflari();
             }
-            formuSifirla();
+        });
+
+        // DİNAMİK LİSTELER
+        db.ref('kisilerDB').on('value', (s) => {
+            const list = s.val() || [];
+            document.getElementById('kisiSelect').innerHTML = list.map(item => `<option value="${item}">${item}</option>`).join('');
+        });
+
+        db.ref('sezonlarDB').on('value', (s) => {
+            const list = s.val() || [];
+            document.getElementById('sezonSelect').innerHTML = list.map(item => `<option value="${item}">${item}</option>`).join('');
+        });
+
+        // MASRAF LİSTELEME
+        let bakimData = {};
+        db.ref('bakimMasraflariDB').on('value', (s) => {
+            bakimData = s.val() || {};
+            renderBakimMasraflari();
+        });
+
+        function renderBakimMasraflari() {
+            const tbody = document.getElementById('bakimTableBody');
+            tbody.innerHTML = "";
+
+            const actionHeader = document.querySelector('.action-col');
+            if (userPermission === "oku" && actionHeader) actionHeader.style.display = 'none';
+
+            for (const [key, item] of Object.entries(bakimData)) {
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${item.tarih}</td>
+                        <td><b>${item.tur}</b></td>
+                        <td>${item.odeyen}</td>
+                        <td><b>${parseFloat(item.tutar).toFixed(2)} ₺</b></td>
+                        <td>${item.aciklama || '-'}</td>
+                        ${userPermission !== "oku" ? `<td><button class="btn-del" onclick="bakimSil('${key}')">Sil</button></td>` : ''}
+                    </tr>`;
+            }
         }
 
-        function duzenle(key) {
-            const data = lokalDB[key].current || lokalDB[key];
-            document.getElementById('editKey').value = key;
-            document.getElementById('sezonSecici').value = data.sezon;
-            document.getElementById('tarih').value = data.tarih;
-            document.getElementById('ekipmanAdi').value = data.ekipmanAdi || '';
-            document.getElementById('yapilanIslem').value = data.yapilanIslem || '';
-            document.getElementById('parcaTutar').value = data.parcaTutar || '';
-            document.getElementById('ustaUcreti').value = data.ustaUcreti || '';
-            document.getElementById('aracPlaka').value = data.aracPlaka || '';
-            document.getElementById('yapilanKm').value = data.yapilanKm || '';
-            document.getElementById('ortTuketim').value = data.ortTuketim || '';
-            document.getElementById('yolLitre').value = data.yolLitre || '';
-            document.getElementById('yolLitreFiyat').value = data.yolLitreFiyat || '';
-            document.getElementById('yolMasrafi').value = data.yolMasrafi || '';
-            document.getElementById('yolAciklama').value = data.yolAciklama || '';
-            document.getElementById('odeyenKisi').value = data.odeyen || '';
+        function bakimKaydet() {
+            if (userPermission === "oku") return;
 
-            document.getElementById('btnKaydet').innerText = "Değişikliği Geçmişe İşle ve Kaydet";
-            document.getElementById('btnKaydet').style.background = "#dd6b20";
-            document.getElementById('btnIptal').style.display = "block";
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+            const tutar = document.getElementById('bakimTutar').value;
+            if (!tutar || tutar <= 0) return alert("Lütfen geçerli bir tutar girin!");
+
+            db.ref('bakimMasraflariDB').push({
+                tur: document.getElementById('bakimTurSelect').value,
+                odeyen: document.getElementById('kisiSelect').value,
+                sezon: document.getElementById('sezonSelect').value,
+                tutar: parseFloat(tutar),
+                tarih: document.getElementById('bakimTarih').value,
+                aciklama: document.getElementById('bakimAciklama').value,
+                ekleyen: currentUser
+            });
+
+            document.getElementById('bakimTutar').value = "";
+            document.getElementById('bakimAciklama').value = "";
+            alert("Bakım masrafı başarıyla kaydedildi.");
         }
 
-        function formuSifirla() {
-            document.getElementById('editKey').value = "";
-            document.getElementById('btnKaydet').innerText = "Verileri Kaydet";
-            document.getElementById('btnKaydet').style.background = "#dd6b20";
-            document.getElementById('btnIptal').style.display = "none";
-            ['ekipmanAdi', 'yapilanIslem', 'parcaTutar', 'ustaUcreti', 'yapilanKm', 'ortTuketim', 'yolLitre', 'yolLitreFiyat', 'yolMasrafi', 'yolAciklama'].forEach(id => document.getElementById(id).value = "");
-            document.getElementById('tarih').valueAsDate = new Date();
-
-            if (varsayilanlar.sezon) document.getElementById('sezonSecici').value = varsayilanlar.sezon;
-            if (varsayilanlar.kisi) document.getElementById('odeyenKisi').value = varsayilanlar.kisi;
-            if (varsayilanlar.arac) document.getElementById('aracPlaka').value = varsayilanlar.arac;
+        function bakimSil(key) {
+            if (userPermission === "oku") return;
+            if (confirm("Bu bakım kaydını silmek istediğinize emin misiniz?")) {
+                db.ref('bakimMasraflariDB/' + key).remove();
+            }
         }
-
-        function gecmisAcKapa(key) { const el = document.getElementById(`hist_${key}`); el.style.display = el.style.display === "block" ? "none" : "block"; }
     </script>
 </body>
 </html>

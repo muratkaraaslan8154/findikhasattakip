@@ -4,7 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gübre & İlaçlama Masrafları</title>
-    <script>if (localStorage.getItem('isLoggedIn') !== 'true') window.location.replace('giris.html');</script>
+    <script>
+        if (localStorage.getItem('isLoggedIn') !== 'true') window.location.replace('giris.html');
+    </script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
 
@@ -12,7 +14,12 @@
         @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
         body { font-family: 'Roboto', sans-serif; background-color: #f4f6f9; padding: 1rem; display: flex; flex-direction: column; align-items: center; }
         .container { width: 100%; max-width: 600px; background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
-        h2 { color: #38a169; margin-top: 0; border-bottom: 2px solid #38a169; padding-bottom: 10px; }
+        .header-title { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #38a169; padding-bottom: 10px; margin-bottom: 15px; }
+        h2 { color: #38a169; margin: 0; font-size: 1.3rem; }
+        .user-tag { color: #718096; font-size: 0.85rem; font-weight: normal; }
+        
+        .readonly-banner { background: #feebc8; color: #7b341e; text-align: center; padding: 12px; border-radius: 8px; font-weight: bold; font-size: 0.9rem; margin-bottom: 15px; display: none; }
+        
         .form-section { background: #f7fafc; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #38a169; }
         .form-group { margin-bottom: 12px; }
         label { display: block; font-size: 0.85rem; font-weight: bold; margin-bottom: 5px; color: #4a5568;}
@@ -25,6 +32,7 @@
         .record-header { display: flex; justify-content: space-between; font-weight: bold; color: #38a169; border-bottom: 1px solid #edf2f7; padding-bottom: 6px; margin-bottom: 8px; }
         .btn-sm { padding: 4px 8px; font-size: 0.75rem; border-radius: 4px; border: none; cursor: pointer; font-weight: bold; }
         .btn-edit { background: #3182ce; color: white; }
+        .btn-del { background: #e53e3e; color: white; margin-left: 5px; }
         .btn-history { background: #dd6b20; color: white; margin-left: 5px; }
         .history-box { background: #fffaf0; border-left: 3px solid #dd6b20; padding: 8px; margin-top: 8px; font-size: 0.8rem; display: none; border-radius: 4px; color: #7b341e; }
         .log-item { border-bottom: 1px dashed #cbd5e0; padding: 4px 0; }
@@ -32,49 +40,58 @@
 </head>
 <body>
     <div class="container">
-        <h2>🌱 Gübre & İlaçlama Masrafı</h2>
-        <input type="hidden" id="editKey">
-
-        <div class="form-section">
-            <div class="row">
-                <div class="form-group"><label>Sezon (Yıl)</label><select id="sezonSecici"></select></div>
-                <div class="form-group"><label>Tarih</label><input type="date" id="tarih"></div>
-            </div>
-            <div class="form-group"><label>İşlem Türü / Malzeme Adı</label><input type="text" id="malzemeAdi" placeholder="Örn: Yaprak Gübresi / Taban Gübresi"></div>
-            <div class="row">
-                <div class="form-group"><label>Miktar (Adet/Kg/Çuval)</label><input type="number" id="gubreMiktar" placeholder="0" step="0.1" oninput="gubreHesapla()"></div>
-                <div class="form-group"><label>Birim Fiyatı (TL)</label><input type="number" id="gubreBirimFiyat" placeholder="0.00" step="0.1" oninput="gubreHesapla()"></div>
-            </div>
-            <div class="row">
-                <div class="form-group"><label>Gübre/İlaç Tutar (TL)</label><input type="number" id="gubreTutar" placeholder="0.00"></div>
-                <div class="form-group"><label>İşçilik / Atım Ücreti (TL)</label><input type="number" id="iscilikUcreti" placeholder="0.00"></div>
-            </div>
+        <div class="header-title">
+            <h2>🌱 Gübre & İlaçlama Masrafı</h2>
+            <span id="userDisplay" class="user-tag"></span>
         </div>
 
-        <!-- 🚗 TARLAYA GİDİŞ - GELİŞ YOL MASRAFI -->
-        <div class="form-section" style="border-left-color: #805ad5;">
-            <label style="color: #2d3748; font-size: 0.95rem; margin-bottom: 10px; display: block; font-weight: bold;">🚗 Tarlaya Gidiş - Geliş Yol Masrafı</label>
-            <div class="form-group"><label>Araç Plakası</label><select id="aracPlaka"></select></div>
-            <div class="row">
-                <div class="form-group"><label>Yapılan KM</label><input type="number" id="yapilanKm" placeholder="Örn: 100" oninput="yolHesapla()"></div>
-                <div class="form-group"><label>Ort. Tüketim (L/100 KM)</label><input type="number" id="ortTuketim" placeholder="Örn: 7.5" step="0.1" oninput="yolHesapla()"></div>
-            </div>
-            <div class="row">
-                <div class="form-group"><label>Harcanan Yakıt Litresi</label><input type="number" id="yolLitre" placeholder="Otomatik/Manuel" step="0.1" oninput="yolHesapla()"></div>
-                <div class="form-group"><label>Litre Fiyatı (TL)</label><input type="number" id="yolLitreFiyat" placeholder="Örn: 44.5" step="0.1" oninput="yolHesapla()"></div>
-            </div>
-            <div class="form-group"><label>Otomatik Tutar (TL)</label><input type="number" id="yolMasrafi" placeholder="0.00" readonly style="background:#edf2f7; font-weight:bold;"></div>
-            <div class="form-group"><label>Yol / Araç Açıklaması</label><input type="text" id="yolAciklama" placeholder="Örn: Gübre taşıma yakıtı..."></div>
+        <div id="readOnlyBanner" class="readonly-banner">
+            👁️ Bu sayfada sadece görüntüleme yetkiniz bulunmaktadır.
         </div>
 
-        <div class="form-section" style="border-left-color: #e53e3e;">
-            <div class="form-group"><label>💰 Ödemeyi Yapan Alacaklı</label><select id="odeyenKisi"></select></div>
+        <div id="formKonteyner">
+            <input type="hidden" id="editKey">
+
+            <div class="form-section">
+                <div class="row">
+                    <div class="form-group"><label>Sezon (Yıl)</label><select id="sezonSecici"></select></div>
+                    <div class="form-group"><label>Tarih</label><input type="date" id="tarih"></div>
+                </div>
+                <div class="form-group"><label>İşlem Türü / Malzeme Adı</label><input type="text" id="malzemeAdi" placeholder="Örn: Yaprak Gübresi / Taban Gübresi"></div>
+                <div class="row">
+                    <div class="form-group"><label>Miktar (Adet/Kg/Çuval)</label><input type="number" id="gubreMiktar" placeholder="0" step="0.1" oninput="gubreHesapla()"></div>
+                    <div class="form-group"><label>Birim Fiyatı (TL)</label><input type="number" id="gubreBirimFiyat" placeholder="0.00" step="0.1" oninput="gubreHesapla()"></div>
+                </div>
+                <div class="row">
+                    <div class="form-group"><label>Gübre/İlaç Tutar (TL)</label><input type="number" id="gubreTutar" placeholder="0.00"></div>
+                    <div class="form-group"><label>İşçilik / Atım Ücreti (TL)</label><input type="number" id="iscilikUcreti" placeholder="0.00"></div>
+                </div>
+            </div>
+
+            <div class="form-section" style="border-left-color: #805ad5;">
+                <label style="color: #2d3748; font-size: 0.95rem; margin-bottom: 10px; display: block; font-weight: bold;">🚗 Tarlaya Gidiş - Geliş Yol Masrafı</label>
+                <div class="form-group"><label>Araç Plakası</label><select id="aracPlaka"></select></div>
+                <div class="row">
+                    <div class="form-group"><label>Yapılan KM</label><input type="number" id="yapilanKm" placeholder="Örn: 100" oninput="yolHesapla()"></div>
+                    <div class="form-group"><label>Ort. Tüketim (L/100 KM)</label><input type="number" id="ortTuketim" placeholder="Örn: 7.5" step="0.1" oninput="yolHesapla()"></div>
+                </div>
+                <div class="row">
+                    <div class="form-group"><label>Harcanan Yakıt Litresi</label><input type="number" id="yolLitre" placeholder="Otomatik/Manuel" step="0.1" oninput="yolHesapla()"></div>
+                    <div class="form-group"><label>Litre Fiyatı (TL)</label><input type="number" id="yolLitreFiyat" placeholder="Örn: 44.5" step="0.1" oninput="yolHesapla()"></div>
+                </div>
+                <div class="form-group"><label>Otomatik Tutar (TL)</label><input type="number" id="yolMasrafi" placeholder="0.00" readonly style="background:#edf2f7; font-weight:bold;"></div>
+                <div class="form-group"><label>Yol / Araç Açıklaması</label><input type="text" id="yolAciklama" placeholder="Örn: Gübre taşıma yakıtı..."></div>
+            </div>
+
+            <div class="form-section" style="border-left-color: #e53e3e;">
+                <div class="form-group"><label>💰 Ödemeyi Yapan Alacaklı</label><select id="odeyenKisi"></select></div>
+            </div>
+
+            <button class="btn-save" id="btnKaydet" onclick="kaydet()">Verileri Kaydet</button>
+            <button class="btn-save btn-cancel" id="btnIptal" onclick="formuSifirla()">İptal / Yeni Kayıt</button>
         </div>
 
-        <button class="btn-save" id="btnKaydet" onclick="kaydet()">Verileri Kaydet</button>
-        <button class="btn-save btn-cancel" id="btnIptal" onclick="formuSifirla()">İptal / Yeni Kayıt</button>
-
-        <h3 style="color: #2d3748; margin-top: 25px; font-size: 1.1rem;">📋 Kayıtlı Gübre & İlaç İşlemleri</h3>
+        <h3 style="color: #2d3748; margin-top: 20px; font-size: 1.1rem;">📋 Kayıtlı Gübre & İlaç İşlemleri</h3>
         <div id="kayitListesi">Yükleniyor...</div>
 
         <a href="index.html" class="btn-back">← Ana Menüye Dön</a>
@@ -96,14 +113,33 @@
         let lokalDB = {};
         document.getElementById('tarih').valueAsDate = new Date();
 
+        const currentUser = localStorage.getItem('currentUser') || "";
+        if (currentUser) document.getElementById('userDisplay').innerText = `(${currentUser})`;
+
+        let userPermission = "tam";
+
+        // YETKİ KONTROLÜ
+        db.ref('usersDB/' + currentUser + '/permissions/gubre').on('value', (s) => {
+            userPermission = s.val() || "tam";
+            if (userPermission === "yok") {
+                alert("Bu sayfaya erişim yetkiniz bulunmamaktadır!");
+                window.location.replace('index.html');
+            } else if (userPermission === "oku") {
+                document.getElementById('formKonteyner').style.display = 'none';
+                document.getElementById('readOnlyBanner').style.display = 'block';
+                listeyiCiz(); 
+            } else {
+                document.getElementById('formKonteyner').style.display = 'block';
+                document.getElementById('readOnlyBanner').style.display = 'none';
+                listeyiCiz();
+            }
+        });
+
         let varsayilanlar = {};
         let sezonlar = [];
         let kisiler = [];
         let araclar = [];
 
-        // 🌟 FIREBASE CANLI VERİ DİNLEYİCİLERİ 🌟
-
-        // 1. Varsayılanlar Dinleyici
         db.ref('varsayilanlarDB').on('value', (snapshot) => {
             varsayilanlar = snapshot.val() || {};
             doldurSezonlar();
@@ -111,86 +147,61 @@
             doldurAraclar();
         });
 
-        // 2. Sezonlar Dinleyici
         db.ref('sezonlarDB').on('value', (snapshot) => {
             sezonlar = snapshot.val() || [];
             doldurSezonlar();
         });
 
-        // 3. Kişiler Dinleyici
         db.ref('kisilerDB').on('value', (snapshot) => {
             kisiler = snapshot.val() || [];
             doldurKisiler();
         });
 
-        // 4. Araçlar Dinleyici
         db.ref('araclarDB').on('value', (snapshot) => {
             araclar = snapshot.val() || [];
             doldurAraclar();
         });
 
-        // 5. Kayıtlı Gübre İşlemleri Dinleyici
         db.ref('islemler/gubre').on('value', (snapshot) => {
             lokalDB = snapshot.val() || {};
             listeyiCiz();
         });
 
-        // --- DOLDURMA FONKSİYONLARI ---
         function doldurSezonlar() {
             const select = document.getElementById('sezonSecici');
+            if (!select) return;
             const mevcutSecim = select.value;
             select.innerHTML = "";
-            
             const sortedSezonlar = [...sezonlar].sort().reverse();
-            sortedSezonlar.forEach(s => {
-                select.innerHTML += `<option value="${s}">${s}</option>`;
-            });
-
-            if (mevcutSecim && [...select.options].some(o => o.value === mevcutSecim)) {
-                select.value = mevcutSecim;
-            } else if (varsayilanlar.sezon) {
-                select.value = varsayilanlar.sezon;
-            }
+            sortedSezonlar.forEach(s => { select.innerHTML += `<option value="${s}">${s}</option>`; });
+            if (mevcutSecim && [...select.options].some(o => o.value === mevcutSecim)) select.value = mevcutSecim;
+            else if (varsayilanlar.sezon) select.value = varsayilanlar.sezon;
         }
 
         function doldurKisiler() {
             const select = document.getElementById('odeyenKisi');
+            if (!select) return;
             const mevcutSecim = select.value;
             select.innerHTML = '<option value="">-- Ödeyen Seçin --</option>';
-
-            kisiler.forEach(k => {
-                select.innerHTML += `<option value="${k}">${k}</option>`;
-            });
-
-            if (mevcutSecim && [...select.options].some(o => o.value === mevcutSecim)) {
-                select.value = mevcutSecim;
-            } else if (varsayilanlar.kisi) {
-                select.value = varsayilanlar.kisi;
-            }
+            kisiler.forEach(k => { select.innerHTML += `<option value="${k}">${k}</option>`; });
+            if (mevcutSecim && [...select.options].some(o => o.value === mevcutSecim)) select.value = mevcutSecim;
+            else if (varsayilanlar.kisi) select.value = varsayilanlar.kisi;
         }
 
         function doldurAraclar() {
             const select = document.getElementById('aracPlaka');
+            if (!select) return;
             const mevcutSecim = select.value;
             select.innerHTML = '<option value="">-- Araç Seçin --</option>';
-
-            araclar.forEach(a => {
-                select.innerHTML += `<option value="${a}">${a}</option>`;
-            });
-
-            if (mevcutSecim && [...select.options].some(o => o.value === mevcutSecim)) {
-                select.value = mevcutSecim;
-            } else if (varsayilanlar.arac) {
-                select.value = varsayilanlar.arac;
-            }
+            araclar.forEach(a => { select.innerHTML += `<option value="${a}">${a}</option>`; });
+            if (mevcutSecim && [...select.options].some(o => o.value === mevcutSecim)) select.value = mevcutSecim;
+            else if (varsayilanlar.arac) select.value = varsayilanlar.arac;
         }
 
         function gubreHesapla() {
             let m = Number(document.getElementById('gubreMiktar').value) || 0;
             let f = Number(document.getElementById('gubreBirimFiyat').value) || 0;
-            if (m > 0 && f > 0) {
-                document.getElementById('gubreTutar').value = (m * f).toFixed(2);
-            }
+            if (m > 0 && f > 0) document.getElementById('gubreTutar').value = (m * f).toFixed(2);
         }
 
         function yolHesapla() {
@@ -198,17 +209,9 @@
             let ort = Number(document.getElementById('ortTuketim').value) || 0;
             let fiyat = Number(document.getElementById('yolLitreFiyat').value) || 0;
             let litreInput = document.getElementById('yolLitre');
-
-            if (km > 0 && ort > 0) {
-                let hesaplananLitre = (km * ort) / 100;
-                litreInput.value = hesaplananLitre.toFixed(2);
-            }
-
+            if (km > 0 && ort > 0) litreInput.value = ((km * ort) / 100).toFixed(2);
             let litre = Number(litreInput.value) || 0;
-
-            if (litre > 0 && fiyat > 0) {
-                document.getElementById('yolMasrafi').value = (litre * fiyat).toFixed(2);
-            }
+            if (litre > 0 && fiyat > 0) document.getElementById('yolMasrafi').value = (litre * fiyat).toFixed(2);
         }
 
         function listeyiCiz() {
@@ -220,7 +223,6 @@
             keys.forEach(key => {
                 const item = lokalDB[key];
                 const cur = item.current || item;
-
                 let toplamTutar = (cur.gubreTutar || 0) + (cur.iscilikUcreti || 0) + (cur.yolMasrafi || 0);
 
                 let historyHTML = "";
@@ -229,6 +231,21 @@
                         historyHTML += `<div class="log-item"><b>[${log.zaman}]</b> ${log.kullanici}: <br>${log.degisiklik}</div>`;
                     });
                 } else { historyHTML = "<div class='log-item'>Geçmiş yok.</div>"; }
+
+                let islemButonlari = "";
+                let gecmisAlani = "";
+                
+                // OKUMA MODU KONTROLÜ
+                if (userPermission !== "oku") {
+                    islemButonlari = `
+                        <div style="margin-top:8px;">
+                            <button class="btn-sm btn-edit" onclick="duzenle('${key}')">✏️ Düzenle</button>
+                            <button class="btn-sm btn-del" onclick="kayitSil('${key}')">🗑️ Sil</button>
+                            <button class="btn-sm btn-history" onclick="gecmisAcKapa('${key}')">📜 Geçmişi Gör</button>
+                        </div>
+                    `;
+                    gecmisAlani = `<div id="hist_${key}" class="history-box"><strong>🕒 Değişiklik Günlüğü:</strong>${historyHTML}</div>`;
+                }
 
                 listeDiv.innerHTML += `
                     <div class="record-card">
@@ -239,16 +256,14 @@
                         <div><b>Tarih:</b> ${cur.tarih} | <b>Gübre/İlaç Tutarı:</b> ${cur.gubreTutar || 0} TL</div>
                         <div><b>İşçilik:</b> ${cur.iscilikUcreti || 0} TL | <b>Yol Yakıtı:</b> ${cur.yolMasrafi || 0} TL (${cur.aracPlaka || 'Araçsız'})</div>
                         <div><b>Ödeyen:</b> ${cur.odeyen}</div>
-                        <div style="margin-top:8px;">
-                            <button class="btn-sm btn-edit" onclick="duzenle('${key}')">✏️ Düzenle</button>
-                            <button class="btn-sm btn-history" onclick="gecmisAcKapa('${key}')">📜 Geçmişi Gör</button>
-                        </div>
-                        <div id="hist_${key}" class="history-box"><strong>🕒 Değişiklik Günlüğü:</strong>${historyHTML}</div>
+                        ${islemButonlari}
+                        ${gecmisAlani}
                     </div>`;
             });
         }
 
         function kaydet() {
+            if (userPermission === "oku") return;
             const editKey = document.getElementById('editKey').value;
             const yeniVeri = {
                 modul: "Gübre",
@@ -294,7 +309,15 @@
             formuSifirla();
         }
 
+        function kayitSil(key) {
+            if (userPermission === "oku") return;
+            if (confirm("Bu gübre/ilaç kaydını silmek istediğinize emin misiniz?")) {
+                db.ref('islemler/gubre/' + key).remove();
+            }
+        }
+
         function duzenle(key) {
+            if (userPermission === "oku") return;
             const data = lokalDB[key].current || lokalDB[key];
             document.getElementById('editKey').value = key;
             document.getElementById('sezonSecici').value = data.sezon;
@@ -327,7 +350,6 @@
             ['malzemeAdi', 'gubreMiktar', 'gubreBirimFiyat', 'gubreTutar', 'iscilikUcreti', 'yapilanKm', 'ortTuketim', 'yolLitre', 'yolLitreFiyat', 'yolMasrafi', 'yolAciklama'].forEach(id => document.getElementById(id).value = "");
             document.getElementById('tarih').valueAsDate = new Date();
 
-            // Varsayılan değerleri yeniden yükle
             if (varsayilanlar.sezon) document.getElementById('sezonSecici').value = varsayilanlar.sezon;
             if (varsayilanlar.kisi) document.getElementById('odeyenKisi').value = varsayilanlar.kisi;
             if (varsayilanlar.arac) document.getElementById('aracPlaka').value = varsayilanlar.arac;

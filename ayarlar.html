@@ -5,19 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Yönetici Paneli & Firebase Ayarları</title>
     
-    <!-- Firebase SDK (Compat Sürümleri) -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
 
     <script>
         const ADMIN_KULLANICI = "murat"; 
-
-        if (localStorage.getItem('isLoggedIn') !== 'true') {
-            window.location.replace('giris.html');
-        }
-        
+        if (localStorage.getItem('isLoggedIn') !== 'true') window.location.replace('giris.html');
         if (localStorage.getItem('currentUser') !== ADMIN_KULLANICI) {
-            alert("Yetkisiz Erişim! Ayarlar sayfasına sadece sistem yöneticisi girebilir.");
+            alert("Yetkisiz Erişim!");
             window.location.replace('index.html');
         }
     </script>
@@ -25,107 +20,184 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
         body { font-family: 'Roboto', sans-serif; background-color: #f4f6f9; padding: 1.5rem 1rem; display: flex; flex-direction: column; align-items: center; }
-        .container { width: 100%; max-width: 650px; background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        .container { width: 100%; max-width: 750px; background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
         h2 { border-bottom: 2px solid #805ad5; padding-bottom: 10px; color: #2d3748; margin-top: 0; display: flex; justify-content: space-between; align-items: center; font-size: 1.3rem;}
         .section-box { background: #f7fafc; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #805ad5; }
         .section-box.blue { border-left-color: #3182ce; }
         .section-box.green { border-left-color: #38a169; }
         .section-box.orange { border-left-color: #dd6b20; }
+        .section-box.red { border-left-color: #e53e3e; }
         .form-group { margin-bottom: 12px; }
         label { display: block; font-size: 0.85rem; font-weight: bold; margin-bottom: 5px; color: #4a5568;}
         input, select { width: 100%; padding: 9px; border: 1px solid #cbd5e0; border-radius: 6px; box-sizing: border-box; font-size: 0.9rem; margin-bottom: 6px; }
         .btn { background: #805ad5; color: white; width: 100%; padding: 10px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; transition: background 0.2s;}
         .btn:hover { opacity: 0.9; }
         table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        th, td { text-align: left; padding: 8px; border-bottom: 1px solid #e2e8f0; font-size: 0.85rem; }
+        th, td { text-align: left; padding: 8px; border-bottom: 1px solid #e2e8f0; font-size: 0.82rem; }
         th { background-color: #edf2f7; color: #4a5568; }
         .list-group { list-style: none; padding: 0; margin-top: 10px; }
-        .list-item { display: flex; justify-content: space-between; align-items: center; background: white; padding: 8px 12px; border: 1px solid #e2e8f0; margin-bottom: 5px; border-radius: 6px; font-size: 0.85rem; }
+        .list-item { display: flex; justify-content: space-between; align-items: center; background: white; padding: 10px; border: 1px solid #e2e8f0; margin-bottom: 8px; border-radius: 6px; font-size: 0.85rem; }
         .btn-del { background: #e53e3e; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 0.75rem; }
         .btn-edit { background: #3182ce; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 0.75rem; margin-right: 4px; }
         .btn-default { background: #d69e2e; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 0.75rem; margin-right: 4px; }
         .badge-default { background: #ecc94b; color: #744210; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; margin-left: 6px; }
         .btn-back { display: block; text-align: center; margin-top: 20px; color: #718096; text-decoration: none; font-weight: 500;}
         .loading { color: #e53e3e; font-size: 0.8rem; text-align: center; margin-bottom: 10px; }
+        .perm-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px; background: #edf2f7; padding: 10px; border-radius: 6px; margin-top: 5px; }
+        .time-inputs { display: flex; gap: 6px; }
+        .time-inputs input { text-align: center; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h2>
-            ⚙️ Firebase Sistem Yönetimi
-            <span style="font-size: 0.85rem; font-weight: normal; color: #718096;" id="adminLabel"></span>
-        </h2>
-        
+        <h2>⚙️ Firebase Sistem Yönetimi <span style="font-size: 0.85rem; font-weight: normal; color: #718096;" id="adminLabel"></span></h2>
         <div id="statusLabel" class="loading">Firebase Bağlantısı Yapılıyor...</div>
 
-        <!-- 1. KULLANICI YÖNETİMİ -->
-        <div class="section-box">
-            <h3 style="margin-top: 0; font-size: 1rem; color: #2d3748;" id="formTitle">👤 Yeni Kullanıcı Ekle</h3>
-            <div class="form-group"><label>Kullanıcı Adı (Küçük Harf):</label><input type="text" id="newUsername" placeholder="Örn: mert" autocomplete="off"></div>
-            <div class="form-group"><label>Giriş PIN Kodu:</label><input type="text" id="newPin" placeholder="Örn: 1234" autocomplete="off"></div>
-            <div class="form-group">
-                <label>Cihaz Kısıtlaması:</label>
-                <select id="deviceSelect">
-                    <option value="all">🌐 Tüm Cihazlar</option>
-                    <option value="mobile">📱 Sadece Cep Telefonu</option>
-                    <option value="pc">💻 Sadece Bilgisayar</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label>Konum Kısıtlaması:</label>
-                <select id="locationSelect">
-                    <option value="false">🌐 Konum Fark Etmez</option>
-                    <option value="true">🏠 Sadece Evdeyken Girebilir</option>
-                </select>
-            </div>
-            <button class="btn" id="saveBtn" onclick="kullaniciKaydet()">Kullanıcıyı Kaydet</button>
-            <button class="btn" id="cancelBtn" onclick="formuTemizle()" style="display:none; background: #a0aec0; margin-top: 5px;">İptal Et</button>
+        <!-- AYRI UYARI SÜRELERİ (GÜN / SAAT / DAKİKA) -->
+        <div class="section-box red">
+            <h3 style="margin-top:0; font-size:1rem; color:#c53030;">🔔 Araç Uyarı Süre Ayarları (Gün / Saat / Dakika)</h3>
 
-            <h4 style="font-size: 0.95rem; color: #2d3748; margin: 15px 0 5px 0;">Mevcut Kullanıcılar</h4>
-            <table>
-                <thead>
-                    <tr><th>Kullanıcı</th><th>PIN</th><th>Cihaz</th><th>Ev Şartı</th><th>İşlem</th></tr>
-                </thead>
-                <tbody id="userTableBody"></tbody>
-            </table>
+            <!-- CANLI GERİ SAYIM PANOLARI -->
+            <div style="margin-bottom: 15px; background: #ffffff; padding: 12px; border-radius: 8px; border: 1px solid #feb2b2; box-shadow: 0 2px 4px rgba(0,0,0,0.03);">
+                <h4 style="margin: 0 0 10px 0; color: #2d3748; font-size: 0.88rem; display: flex; align-items: center; gap: 6px;">
+                    ⏳ En Yakın Araç Son Tarih Geri Sayımları (Canlı)
+                </h4>
+                <div id="countdownBox" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px;">
+                    <div style="background:#f7fafc; padding:10px; border-radius:6px; border-left:4px solid #dd6b20;">
+                        <span style="font-size:0.75rem; color:#718096; font-weight:bold;">📋 EN YAKIN MUAYENE</span>
+                        <div id="cdMuayene" style="font-weight:bold; color:#2d3748; margin-top:4px;">Hesaplanıyor...</div>
+                    </div>
+                    <div style="background:#f7fafc; padding:10px; border-radius:6px; border-left:4px solid #3182ce;">
+                        <span style="font-size:0.75rem; color:#718096; font-weight:bold;">🛡️ EN YAKIN SİGORTA</span>
+                        <div id="cdSigorta" style="font-weight:bold; color:#2d3748; margin-top:4px;">Hesaplanıyor...</div>
+                    </div>
+                    <div style="background:#f7fafc; padding:10px; border-radius:6px; border-left:4px solid #e53e3e;">
+                        <span style="font-size:0.75rem; color:#718096; font-weight:bold;">💳 EN YAKIN MTV</span>
+                        <div id="cdMtv" style="font-weight:bold; color:#2d3748; margin-top:4px;">Hesaplanıyor...</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div style="margin-bottom:12px; border-bottom:1px solid #feb2b2; padding-bottom:8px;">
+                <label>📋 Muayene Uyarı Eşiği:</label>
+                <div class="time-inputs">
+                    <input type="number" id="mGun" placeholder="Gün" value="30" min="0">
+                    <input type="number" id="mSaat" placeholder="Saat" value="0" min="0" max="23">
+                    <input type="number" id="mDakika" placeholder="Dakika" value="0" min="0" max="59">
+                </div>
+            </div>
+
+            <div style="margin-bottom:12px; border-bottom:1px solid #feb2b2; padding-bottom:8px;">
+                <label>🛡️ Sigorta Uyarı Eşiği:</label>
+                <div class="time-inputs">
+                    <input type="number" id="sGun" placeholder="Gün" value="30" min="0">
+                    <input type="number" id="sSaat" placeholder="Saat" value="0" min="0" max="23">
+                    <input type="number" id="sDakika" placeholder="Dakika" value="0" min="0" max="59">
+                </div>
+            </div>
+
+            <div style="margin-bottom:12px;">
+                <label>💳 MTV Uyarı Eşiği:</label>
+                <div class="time-inputs">
+                    <input type="number" id="mtvGun" placeholder="Gün" value="15" min="0">
+                    <input type="number" id="mtvSaat" placeholder="Saat" value="0" min="0" max="23">
+                    <input type="number" id="mtvDakika" placeholder="Dakika" value="0" min="0" max="59">
+                </div>
+            </div>
+
+            <button class="btn" style="background:#e53e3e;" onclick="uyariGunuKaydet()">Tüm Uyarı Sürelerini Kaydet</button>
         </div>
 
-        <!-- 2. ARAÇ / PLAKA YÖNETİMİ -->
+        <!-- KULLANICI & YETKİ YÖNETİMİ -->
+        <div class="section-box">
+            <h3 style="margin-top: 0; font-size: 1rem; color: #2d3748;" id="formTitle">👤 Yeni Kullanıcı & Yetki Ekle</h3>
+            <div class="form-group"><label>Kullanıcı Adı:</label><input type="text" id="newUsername" placeholder="Örn: mert"></div>
+            <div class="form-group"><label>Giriş PIN Kodu:</label><input type="text" id="newPin" placeholder="Örn: 1234"></div>
+            
+            <div style="display: flex; gap: 10px;">
+                <div class="form-group" style="flex:1;">
+                    <label>Cihaz Kısıtlaması:</label>
+                    <select id="deviceSelect">
+                        <option value="all">🌐 Tüm Cihazlar</option>
+                        <option value="mobile">📱 Sadece Cep</option>
+                        <option value="pc">💻 Sadece PC</option>
+                    </select>
+                </div>
+                <div class="form-group" style="flex:1;">
+                    <label>Konum Kısıtlaması:</label>
+                    <select id="locationSelect">
+                        <option value="false">🌐 Fark Etmez</option>
+                        <option value="true">🏠 Sadece Ev</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>🔐 Sayfa Yetkileri:</label>
+                <div class="perm-grid">
+                    <div class="perm-item"><label>🌾 Tırpan:</label><select id="permTirpan"><option value="tam">🟢 Tam</option><option value="oku">👁️ Oku</option><option value="yok">🔴 Yok</option></select></div>
+                    <div class="perm-item"><label>🚜 Gübre:</label><select id="permGubre"><option value="tam">🟢 Tam</option><option value="oku">👁️ Oku</option><option value="yok">🔴 Yok</option></select></div>
+                    <div class="perm-item"><label>🪚 Bakım:</label><select id="permBakim"><option value="tam">🟢 Tam</option><option value="oku">👁️ Oku</option><option value="yok">🔴 Yok</option></select></div>
+                    <div class="perm-item"><label>🚗 Araç:</label><select id="permArac"><option value="tam">🟢 Tam</option><option value="oku">👁️ Oku</option><option value="yok">🔴 Yok</option></select></div>
+                    <div class="perm-item"><label>🧾 Fatura:</label><select id="permFaturalar"><option value="tam">🟢 Tam</option><option value="oku">👁️ Oku</option><option value="yok">🔴 Yok</option></select></div>
+                    <div class="perm-item"><label>📊 Rapor:</label><select id="permRapor"><option value="tam">🟢 Tam</option><option value="oku">👁️ Oku</option><option value="yok">🔴 Yok</option></select></div>
+                </div>
+            </div>
+
+            <button class="btn" id="saveBtn" onclick="kullaniciKaydet()">Kullanıcıyı Kaydet</button>
+            <button class="btn" id="cancelBtn" onclick="formuTemizle()" style="display:none; background: #a0aec0; margin-top: 5px;">İptal</button>
+
+            <h4 style="font-size: 0.95rem; color: #2d3748; margin: 15px 0 5px 0;">Mevcut Kullanıcılar</h4>
+            <div style="overflow-x: auto;">
+                <table>
+                    <thead><tr><th>Kullanıcı</th><th>PIN</th><th>Cihaz</th><th>Ev</th><th>Yetki</th><th>İşlem</th></tr></thead>
+                    <tbody id="userTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ARAÇ / PLAKA VE VARSAYILAN ARAÇ SEÇİMİ -->
         <div class="section-box blue">
-            <label>🚘 Araç / Plaka Tanımla</label>
-            <input type="text" id="yeniPlaka" placeholder="Plaka Girin (Örn: 81 AF 123)">
-            <button class="btn" style="background:#3182ce;" onclick="aracEkle()">Araç Ekle</button>
+            <h3 style="margin-top:0; font-size:1rem; color:#2b6cb0;">🚘 Araç, Resmi Tarihler & Belge Fotoğrafı</h3>
+            <div class="form-group"><label>Plaka:</label><input type="text" id="yeniPlaka" placeholder="Örn: 81 AF 123"></div>
+            <div style="display:flex; gap:10px;">
+                <div class="form-group" style="flex:1;"><label>Muayene Tarihi:</label><input type="date" id="yeniMuayeneTarihi"></div>
+                <div class="form-group" style="flex:1;"><label>Sigorta Bitiş Tarihi:</label><input type="date" id="yeniSigortaTarihi"></div>
+                <div class="form-group" style="flex:1;"><label>MTV Son Ödeme Tarihi:</label><input type="date" id="yeniMtvTarihi"></div>
+            </div>
+            <div class="form-group">
+                <label>Ruhsat / Belge Fotoğrafı:</label>
+                <input type="file" id="yeniAracFoto" accept="image/*">
+            </div>
+            <button class="btn" style="background:#3182ce;" onclick="aracEkle()">Araç Kaydet / Güncelle</button>
             <ul class="list-group" id="aracListesi"></ul>
         </div>
 
-        <!-- 3. ABONE / SÖZLEŞME NO YÖNETİMİ -->
+        <!-- DİĞER LİSTELER -->
         <div class="section-box blue">
-            <label>⚡ Fatura Abone / Sözleşme No Tanımla</label>
+            <label>⚡ Fatura Abone / Sözleşme No</label>
             <select id="yeniAboneTur">
                 <option value="⚡ Elektrik">⚡ Elektrik</option>
                 <option value="💧 Su">💧 Su / Sulama</option>
                 <option value="🔥 Doğalgaz">🔥 Doğalgaz</option>
                 <option value="🌐 İnternet / TV">🌐 İnternet / TV</option>
-                <option value="📑 Diğer">📑 Diğer</option>
             </select>
-            <input type="text" id="yeniAboneNo" placeholder="Abone / Sözleşme No">
-            <input type="text" id="yeniAboneEtiket" placeholder="Açıklama (Örn: Tarla Sayacı)">
+            <input type="text" id="yeniAboneNo" placeholder="Abone No">
+            <input type="text" id="yeniAboneEtiket" placeholder="Açıklama">
             <button class="btn" style="background:#3182ce;" onclick="aboneEkle()">Abonelik Ekle</button>
             <ul class="list-group" id="aboneListesi"></ul>
         </div>
 
-        <!-- 4. KULLANICI / ÖDEYEN YÖNETİMİ -->
         <div class="section-box green">
-            <label>💰 Ödemeyi Yapan Kişiler Listesi</label>
-            <input type="text" id="yeniKisi" placeholder="Kişi Adı (Örn: Murat Karaaslan)">
+            <label>💰 Ödeyen Kişiler</label>
+            <input type="text" id="yeniKisi" placeholder="Kişi Adı">
             <button class="btn" style="background:#38a169;" onclick="kisiEkle()">Kişi Ekle</button>
             <ul class="list-group" id="kisiListesi"></ul>
         </div>
 
-        <!-- 5. SEZON YÖNETİMİ -->
         <div class="section-box orange">
-            <label>📅 Sezon (Yıl) Yönetimi</label>
-            <input type="number" id="yeniSezon" placeholder="Yıl (Örn: 2026)">
+            <label>📅 Sezon (Yıl)</label>
+            <input type="number" id="yeniSezon" placeholder="Örn: 2026">
             <button class="btn" style="background:#dd6b20;" onclick="sezonEkle()">Sezon Ekle</button>
             <ul class="list-group" id="sezonListesi"></ul>
         </div>
@@ -143,11 +215,9 @@
             projectId: "findikhasattakip",
             storageBucket: "findikhasattakip.firebasestorage.app",
             messagingSenderId: "296913243470",
-            appId: "1:296913243470:web:f2a6cfed4196ff44e0221f",
-            measurementId: "G-XKSNG4LNL1"
+            appId: "1:296913243470:web:f2a6cfed4196ff44e0221f"
         };
 
-        // Firebase Başlatma
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
         document.getElementById('statusLabel').innerText = "⚡ Firebase Canlı Bağlantı Aktif";
@@ -160,72 +230,156 @@
         let localSezonlar = [];
         let localVarsayilanlar = {};
 
-        // --- FIREBASE CANLI DİNLEYİCİLERİ ---
-        
-        // Varsayılanlar
-        db.ref('varsayilanlarDB').on('value', (snapshot) => {
-            localVarsayilanlar = snapshot.val() || {};
-            renderAraclar();
-            renderAbonelikler();
-            renderKisiler();
-            renderSezonlar();
-        });
-
-        // Kullanıcılar
-        db.ref('usersDB').on('value', (snapshot) => {
-            localUsers = snapshot.val() || {};
-            kullaniciListesiniGuncelle();
-        });
-
-        // Araçlar
-        db.ref('araclarDB').on('value', (snapshot) => {
-            localAraclar = snapshot.val() || [];
-            renderAraclar();
-        });
-
-        // Abonelikler
-        db.ref('aboneliklerDB').on('value', (snapshot) => {
-            localAbonelikler = snapshot.val() || [];
-            renderAbonelikler();
-        });
-
-        // Kişiler
-        db.ref('kisilerDB').on('value', (snapshot) => {
-            localKisiler = snapshot.val() || [];
-            renderKisiler();
-        });
-
-        // Sezonlar
-        db.ref('sezonlarDB').on('value', (snapshot) => {
-            localSezonlar = snapshot.val() || [];
-            renderSezonlar();
-        });
-
-        // --- VARSAYILAN DEĞER ATAMA FONKSİYONU ---
-        function varsayilanYap(kategori, deger) {
-            db.ref(`varsayilanlarDB/${kategori}`).set(deger);
+        function toArray(data) {
+            if (!data) return [];
+            if (Array.isArray(data)) return data.filter(Boolean);
+            return Object.values(data).filter(Boolean);
         }
 
-        // --- KULLANICI İŞLEMLERİ ---
+        db.ref('varsayilanlarDB').on('value', (s) => {
+            localVarsayilanlar = s.val() || {};
+            if(localVarsayilanlar.uyariAyar) {
+                const u = localVarsayilanlar.uyariAyar;
+                if(u.muayene) {
+                    document.getElementById('mGun').value = u.muayene.gun ?? 30;
+                    document.getElementById('mSaat').value = u.muayene.saat ?? 0;
+                    document.getElementById('mDakika').value = u.muayene.dakika ?? 0;
+                }
+                if(u.sigorta) {
+                    document.getElementById('sGun').value = u.sigorta.gun ?? 30;
+                    document.getElementById('sSaat').value = u.sigorta.saat ?? 0;
+                    document.getElementById('sDakika').value = u.sigorta.dakika ?? 0;
+                }
+                if(u.mtv) {
+                    document.getElementById('mtvGun').value = u.mtv.gun ?? 15;
+                    document.getElementById('mtvSaat').value = u.mtv.saat ?? 0;
+                    document.getElementById('mtvDakika').value = u.mtv.dakika ?? 0;
+                }
+            }
+            renderAraclar(); renderAbonelikler(); renderKisiler(); renderSezonlar();
+        });
+
+        db.ref('usersDB').on('value', (s) => { localUsers = s.val() || {}; kullaniciListesiniGuncelle(); });
+        db.ref('araclarDB').on('value', (s) => { localAraclar = toArray(s.val()); renderAraclar(); });
+        db.ref('aboneliklerDB').on('value', (s) => { localAbonelikler = toArray(s.val()); renderAbonelikler(); });
+        db.ref('kisilerDB').on('value', (s) => { localKisiler = toArray(s.val()); renderKisiler(); });
+        db.ref('sezonlarDB').on('value', (s) => { localSezonlar = toArray(s.val()); renderSezonlar(); });
+
+        function varsayilanYap(kategori, deger) { 
+            db.ref(`varsayilanlarDB/${kategori}`).set(deger); 
+            alert(`Varsayılan ${kategori} "${deger}" olarak ayarlandı.`);
+        }
+
+        function uyariGunuKaydet() {
+            const ayarObj = {
+                muayene: {
+                    gun: parseInt(document.getElementById('mGun').value) || 0,
+                    saat: parseInt(document.getElementById('mSaat').value) || 0,
+                    dakika: parseInt(document.getElementById('mDakika').value) || 0
+                },
+                sigorta: {
+                    gun: parseInt(document.getElementById('sGun').value) || 0,
+                    saat: parseInt(document.getElementById('sSaat').value) || 0,
+                    dakika: parseInt(document.getElementById('sDakika').value) || 0
+                },
+                mtv: {
+                    gun: parseInt(document.getElementById('mtvGun').value) || 0,
+                    saat: parseInt(document.getElementById('mtvSaat').value) || 0,
+                    dakika: parseInt(document.getElementById('mtvDakika').value) || 0
+                }
+            };
+            db.ref('varsayilanlarDB/uyariAyar').set(ayarObj);
+            alert("Süre uyarı ayarları başarıyla güncellendi.");
+        }
+
+        function renderAraclar() {
+            const def = localVarsayilanlar.arac;
+            const aracList = toArray(localAraclar);
+            document.getElementById('aracListesi').innerHTML = aracList.map((item, i) => {
+                const plakaStr = typeof item === 'object' ? item.plaka : item;
+                const mTarih = item.muayeneTarihi || '-';
+                const sTarih = item.sigortaTarihi || '-';
+                const mtvTarih = item.mtvTarihi || '-';
+                const fotoHtml = item.foto ? `<br><a href="${item.foto}" target="_blank" style="color:#3182ce; font-size:0.75rem;">🖼️ Belge Gör</a>` : '';
+
+                return `
+                <li class="list-item">
+                    <div>
+                        <b>${plakaStr}</b> ${plakaStr === def ? '<span class="badge-default">⭐ Varsayılan</span>' : ''}
+                        <div style="font-size:0.75rem; color:#718096; margin-top:3px;">
+                            📋 Muayene: ${mTarih} | 🛡️ Sigorta: ${sTarih} | 💳 MTV: ${mtvTarih} ${fotoHtml}
+                        </div>
+                    </div>
+                    <div>
+                        ${plakaStr !== def ? `<button class="btn-default" onclick="varsayilanYap('arac', '${plakaStr}')">⭐ Varsayılan Yap</button>` : ''}
+                        <button class="btn-del" onclick="listeElemanSil('araclarDB', ${i})">Sil</button>
+                    </div>
+                </li>`;
+            }).join('');
+        }
+
+        async function aracEkle() {
+            const plaka = document.getElementById('yeniPlaka').value.trim().toUpperCase();
+            if(!plaka) return alert("Lütfen plaka giriniz!");
+
+            const muayeneTarihi = document.getElementById('yeniMuayeneTarihi').value;
+            const sigortaTarihi = document.getElementById('yeniSigortaTarihi').value;
+            const mtvTarihi = document.getElementById('yeniMtvTarihi').value;
+            const fileInput = document.getElementById('yeniAracFoto');
+
+            let fotoBase64 = "";
+            if (fileInput.files.length > 0) {
+                fotoBase64 = await base64Dönüştür(fileInput.files[0]);
+            }
+
+            const yeniObj = {
+                plaka: plaka,
+                muayeneTarihi: muayeneTarihi,
+                sigortaTarihi: sigortaTarihi,
+                mtvTarihi: mtvTarihi,
+                foto: fotoBase64
+            };
+
+            let aracArray = toArray(localAraclar);
+            const idx = aracArray.findIndex(a => (typeof a === 'object' ? a.plaka : a) === plaka);
+            if(idx >= 0) aracArray[idx] = yeniObj;
+            else aracArray.push(yeniObj);
+
+            localAraclar = aracArray;
+            db.ref('araclarDB').set(localAraclar);
+            
+            document.getElementById('yeniPlaka').value = "";
+            document.getElementById('yeniMuayeneTarihi').value = "";
+            document.getElementById('yeniSigortaTarihi').value = "";
+            document.getElementById('yeniMtvTarihi').value = "";
+            fileInput.value = "";
+            alert("Araç kaydı güncellendi.");
+        }
+
+        function base64Dönüştür(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = error => reject(error);
+            });
+        }
+
         function kullaniciListesiniGuncelle() {
             const tbody = document.getElementById('userTableBody');
             tbody.innerHTML = "";
-
             for (const [username, details] of Object.entries(localUsers)) {
-                let deviceText = details.device === "all" ? "Tümü" : (details.device === "mobile" ? "Mobil" : "PC");
-                let locText = details.requireLocation ? "Evet" : "Hayır";
-                
                 let actionButtons = username === ADMIN_KULLANICI 
                     ? `<button class="btn-edit" onclick="kullaniciDuzenle('${username}')">Düzenle</button>` 
-                    : `<button class="btn-edit" onclick="kullaniciDuzenle('${username}')">Düzenle</button>
-                       <button class="btn-del" onclick="kullaniciSil('${username}')">Sil</button>`;
+                    : `<button class="btn-edit" onclick="kullaniciDuzenle('${username}')">Düzenle</button><button class="btn-del" onclick="kullaniciSil('${username}')">Sil</button>`;
 
                 tbody.innerHTML += `
                     <tr>
                         <td style="font-weight:bold;">${username}</td>
                         <td>${details.pin}</td>
-                        <td>${deviceText}</td>
-                        <td>${locText}</td>
+                        <td>${details.device}</td>
+                        <td>${details.requireLocation ? 'Evet' : 'Hayır'}</td>
+                        <td style="font-size:0.7rem;">Gelişmiş</td>
                         <td>${actionButtons}</td>
                     </tr>`;
             }
@@ -234,32 +388,41 @@
         function kullaniciKaydet() {
             const user = document.getElementById('newUsername').value.toLowerCase().trim();
             const pin = document.getElementById('newPin').value.trim();
-            if(!user || !pin) return alert("Lütfen kullanıcı adı ve PIN girin!");
+            if(!user || !pin) return alert("Kullanıcı adı ve PIN girin!");
 
             db.ref('usersDB/' + user).set({
                 pin: pin,
                 device: document.getElementById('deviceSelect').value,
-                requireLocation: document.getElementById('locationSelect').value === "true"
+                requireLocation: document.getElementById('locationSelect').value === "true",
+                permissions: {
+                    tirpan: document.getElementById('permTirpan').value,
+                    gubre: document.getElementById('permGubre').value,
+                    bakim: document.getElementById('permBakim').value,
+                    arac: document.getElementById('permArac').value,
+                    faturalar: document.getElementById('permFaturalar').value,
+                    rapor: document.getElementById('permRapor').value
+                }
             });
-
             formuTemizle();
         }
 
-        function kullaniciSil(username) {
-            if(confirm(username + " adlı kullanıcıyı silmek istediğinize emin misiniz?")) {
-                db.ref('usersDB/' + username).remove();
-            }
-        }
-
-        function kullaniciDuzenle(username) {
-            const data = localUsers[username];
-            document.getElementById('newUsername').value = username;
+        function kullaniciSil(u) { if(confirm(u + " silinsin mi?")) db.ref('usersDB/' + u).remove(); }
+        
+        function kullaniciDuzenle(u) {
+            const d = localUsers[u];
+            document.getElementById('newUsername').value = u;
             document.getElementById('newUsername').disabled = true;
-            document.getElementById('newPin').value = data.pin;
-            document.getElementById('deviceSelect').value = data.device;
-            document.getElementById('locationSelect').value = data.requireLocation.toString();
-            
-            document.getElementById('formTitle').innerText = "Kullanıcıyı Düzenle: " + username;
+            document.getElementById('newPin').value = d.pin;
+            document.getElementById('deviceSelect').value = d.device;
+            document.getElementById('locationSelect').value = d.requireLocation.toString();
+            const p = d.permissions || {};
+            document.getElementById('permTirpan').value = p.tirpan || "tam";
+            document.getElementById('permGubre').value = p.gubre || "tam";
+            document.getElementById('permBakim').value = p.bakim || "tam";
+            document.getElementById('permArac').value = p.arac || "tam";
+            document.getElementById('permFaturalar').value = p.faturalar || "tam";
+            document.getElementById('permRapor').value = p.rapor || "tam";
+            document.getElementById('formTitle').innerText = "Düzenle: " + u;
             document.getElementById('saveBtn').innerText = "Güncelle";
             document.getElementById('cancelBtn').style.display = "block";
         }
@@ -268,138 +431,178 @@
             document.getElementById('newUsername').value = "";
             document.getElementById('newUsername').disabled = false;
             document.getElementById('newPin').value = "";
-            document.getElementById('deviceSelect').value = "all";
-            document.getElementById('locationSelect').value = "false";
-            document.getElementById('formTitle').innerText = "👤 Yeni Kullanıcı Ekle";
+            document.getElementById('formTitle').innerText = "👤 Yeni Kullanıcı & Yetki Ekle";
             document.getElementById('saveBtn').innerText = "Kullanıcıyı Kaydet";
             document.getElementById('cancelBtn').style.display = "none";
         }
 
-        // --- ARAÇ İŞLEMLERİ ---
-        function renderAraclar() {
-            const def = localVarsayilanlar.arac;
-            document.getElementById('aracListesi').innerHTML = localAraclar.map((item, i) => {
-                const isDefault = item === def;
-                return `
-                <li class="list-item">
-                    <div>
-                        <b>${item}</b>
-                        ${isDefault ? '<span class="badge-default">⭐ Varsayılan</span>' : ''}
-                    </div>
-                    <div>
-                        ${!isDefault ? `<button class="btn-default" onclick="varsayilanYap('arac', '${item}')">⭐ Varsayılan Yap</button>` : ''}
-                        <button class="btn-del" onclick="listeElemanSil('araclarDB', ${i})">Sil</button>
-                    </div>
-                </li>`;
-            }).join('');
-        }
-        function aracEkle() {
-            const v = document.getElementById('yeniPlaka').value.trim().toUpperCase();
-            if(v) { 
-                localAraclar.push(v); 
-                db.ref('araclarDB').set(localAraclar); 
-                if(!localVarsayilanlar.arac) varsayilanYap('arac', v);
-                document.getElementById('yeniPlaka').value = ""; 
-            }
-        }
-
-        // --- ABONELİK İŞLEMLERİ ---
         function renderAbonelikler() {
             const def = localVarsayilanlar.abonelik;
-            document.getElementById('aboneListesi').innerHTML = localAbonelikler.map((item, i) => {
-                const isDefault = item.no === def;
+            const aboneList = toArray(localAbonelikler);
+            document.getElementById('aboneListesi').innerHTML = aboneList.map((item, i) => {
+                const isDef = item.no === def;
                 return `
                 <li class="list-item">
                     <div>
-                        <b>[${item.tur}]</b> ${item.no} <small style="color:#718096">(${item.etiket||''})</small>
-                        ${isDefault ? '<span class="badge-default">⭐ Varsayılan</span>' : ''}
+                        <b>[${item.tur}]</b> ${item.no} ${item.etiket ? `(${item.etiket})` : ''} 
+                        ${isDef ? '<span class="badge-default">⭐ Varsayılan</span>' : ''}
                     </div>
                     <div>
-                        ${!isDefault ? `<button class="btn-default" onclick="varsayilanYap('abonelik', '${item.no}')">⭐ Varsayılan Yap</button>` : ''}
+                        ${!isDef ? `<button class="btn-default" onclick="varsayilanYap('abonelik', '${item.no}')">⭐ Varsayılan Yap</button>` : ''}
                         <button class="btn-del" onclick="listeElemanSil('aboneliklerDB', ${i})">Sil</button>
                     </div>
                 </li>`;
             }).join('');
         }
+
         function aboneEkle() {
             const tur = document.getElementById('yeniAboneTur').value;
             const no = document.getElementById('yeniAboneNo').value.trim();
             const etiket = document.getElementById('yeniAboneEtiket').value.trim();
-            if(no) { 
-                localAbonelikler.push({ tur, no, etiket }); 
-                db.ref('aboneliklerDB').set(localAbonelikler); 
-                if(!localVarsayilanlar.abonelik) varsayilanYap('abonelik', no);
-                document.getElementById('yeniAboneNo').value = ""; 
-                document.getElementById('yeniAboneEtiket').value = ""; 
-            }
+            if(!no) return alert("Abone Numarası giriniz!");
+            let list = toArray(localAbonelikler);
+            list.push({ tur, no, etiket });
+            localAbonelikler = list;
+            db.ref('aboneliklerDB').set(localAbonelikler);
+            document.getElementById('yeniAboneNo').value = "";
+            document.getElementById('yeniAboneEtiket').value = "";
         }
 
-        // --- KİŞİ İŞLEMLERİ ---
-        function renderKisiler() {
+        function renderKisiler() { 
             const def = localVarsayilanlar.kisi;
-            document.getElementById('kisiListesi').innerHTML = localKisiler.map((item, i) => {
-                const isDefault = item === def;
-                return `
+            const kisiList = toArray(localKisiler);
+            document.getElementById('kisiListesi').innerHTML = kisiList.map((item, i) => `
                 <li class="list-item">
                     <div>
-                        <b>${item}</b>
-                        ${isDefault ? '<span class="badge-default">⭐ Varsayılan</span>' : ''}
+                        <b>${item}</b> ${item === def ? '<span class="badge-default">⭐ Varsayılan</span>' : ''}
                     </div>
                     <div>
-                        ${!isDefault ? `<button class="btn-default" onclick="varsayilanYap('kisi', '${item}')">⭐ Varsayılan Yap</button>` : ''}
+                        ${item !== def ? `<button class="btn-default" onclick="varsayilanYap('kisi', '${item}')">⭐ Varsayılan Yap</button>` : ''}
                         <button class="btn-del" onclick="listeElemanSil('kisilerDB', ${i})">Sil</button>
                     </div>
-                </li>`;
-            }).join('');
-        }
-        function kisiEkle() {
-            const v = document.getElementById('yeniKisi').value.trim();
-            if(v) { 
-                localKisiler.push(v); 
-                db.ref('kisilerDB').set(localKisiler); 
-                if(!localVarsayilanlar.kisi) varsayilanYap('kisi', v);
-                document.getElementById('yeniKisi').value = ""; 
-            }
+                </li>`).join(''); 
         }
 
-        // --- SEZON İŞLEMLERİ ---
-        function renderSezonlar() {
+        function kisiEkle() {
+            const kisi = document.getElementById('yeniKisi').value.trim();
+            if(!kisi) return alert("Kişi adı giriniz!");
+            let list = toArray(localKisiler);
+            list.push(kisi);
+            localKisiler = list;
+            db.ref('kisilerDB').set(localKisiler);
+            document.getElementById('yeniKisi').value = "";
+        }
+
+        function renderSezonlar() { 
             const def = localVarsayilanlar.sezon;
-            document.getElementById('sezonListesi').innerHTML = localSezonlar.map((item, i) => {
-                const isDefault = item.toString() === def?.toString();
-                return `
+            const sezonList = toArray(localSezonlar);
+            document.getElementById('sezonListesi').innerHTML = sezonList.map((item, i) => `
                 <li class="list-item">
                     <div>
-                        <b>${item}</b>
-                        ${isDefault ? '<span class="badge-default">⭐ Varsayılan</span>' : ''}
+                        <b>${item}</b> ${item === def ? '<span class="badge-default">⭐ Varsayılan</span>' : ''}
                     </div>
                     <div>
-                        ${!isDefault ? `<button class="btn-default" onclick="varsayilanYap('sezon', '${item}')">⭐ Varsayılan Yap</button>` : ''}
+                        ${item !== def ? `<button class="btn-default" onclick="varsayilanYap('sezon', '${item}')">⭐ Varsayılan Yap</button>` : ''}
                         <button class="btn-del" onclick="listeElemanSil('sezonlarDB', ${i})">Sil</button>
                     </div>
-                </li>`;
-            }).join('');
+                </li>`).join(''); 
         }
-        function sezonEkle() {
-            const v = document.getElementById('yeniSezon').value.trim();
+
+        function sezonEkle() { 
+            const v = document.getElementById('yeniSezon').value.trim(); 
             if(v) { 
-                localSezonlar.push(v); 
+                let list = toArray(localSezonlar);
+                list.push(v);
+                localSezonlar = list;
                 db.ref('sezonlarDB').set(localSezonlar); 
-                if(!localVarsayilanlar.sezon) varsayilanYap('sezon', v);
                 document.getElementById('yeniSezon').value = ""; 
-            }
+            } 
         }
-
+        
         function listeElemanSil(dbPath, index) {
-            let refArray = [];
-            if(dbPath === 'araclarDB') refArray = localAraclar;
-            else if(dbPath === 'aboneliklerDB') refArray = localAbonelikler;
-            else if(dbPath === 'kisilerDB') refArray = localKisiler;
-            else if(dbPath === 'sezonlarDB') refArray = localSezonlar;
-
-            refArray.splice(index, 1);
-            db.ref(dbPath).set(refArray);
+            let arr = toArray(dbPath === 'araclarDB' ? localAraclar : dbPath === 'aboneliklerDB' ? localAbonelikler : dbPath === 'kisilerDB' ? localKisiler : localSezonlar);
+            arr.splice(index, 1);
+            db.ref(dbPath).set(arr);
         }
+
+        // TAMAMEN YENİLENMİŞ VE HATAYA DAYANIKLI GERİ SAYIM MOTORU
+        function guncelleGeriSayimlar() {
+            const simdi = new Date();
+            const turler = [
+                { id: 'cdMuayene', field: 'muayeneTarihi' },
+                { id: 'cdSigorta', field: 'sigortaTarihi' },
+                { id: 'cdMtv', field: 'mtvTarihi' }
+            ];
+
+            const aracListesi = localAraclar ? Object.values(localAraclar) : [];
+
+            turler.forEach(t => {
+                let enYakinGelecek = null;
+                let enYakinGelecekFark = Infinity;
+                let plakaGelecek = "";
+
+                let enYakinGecmis = null;
+                let enYakinGecmisFark = -Infinity;
+                let plakaGecmis = "";
+
+                aracListesi.forEach(a => {
+                    if (!a || typeof a !== 'object') return;
+                    
+                    const tarihStr = a[t.field];
+                    
+                    if (tarihStr && tarihStr.includes('-')) {
+                        const parts = tarihStr.split('-');
+                        // Güvenli Tarih Çevrimi (Yıl, Ay-1, Gün, Saat, Dakika, Saniye)
+                        const tarihObj = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]), 23, 59, 59);
+                        
+                        if (!isNaN(tarihObj.getTime())) {
+                            const fark = tarihObj.getTime() - simdi.getTime();
+                            
+                            // Gelecekteki bir tarih ise, BİZE EN YAKIN olanı bul (fark pozitif ve en küçük olmalı)
+                            if (fark > 0) {
+                                if (fark < enYakinGelecekFark) {
+                                    enYakinGelecekFark = fark;
+                                    enYakinGelecek = tarihObj;
+                                    plakaGelecek = a.plaka || "Araç";
+                                }
+                            } else {
+                                // Tarihi GEÇMİŞTE ise, BUGÜNE EN YAKIN (en son süresi dolan) olanı bul 
+                                if (fark > enYakinGecmisFark) {
+                                    enYakinGecmisFark = fark;
+                                    enYakinGecmis = tarihObj;
+                                    plakaGecmis = a.plaka || "Araç";
+                                }
+                            }
+                        }
+                    }
+                });
+
+                const el = document.getElementById(t.id);
+                if (!el) return;
+
+                if (enYakinGelecek) {
+                    // Gelecek bir tarih bulundu -> Geri sayım başlat
+                    const farkMs = enYakinGelecekFark;
+                    const gun = Math.floor(farkMs / (1000 * 60 * 60 * 24));
+                    const saat = Math.floor((farkMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                    const dak = Math.floor((farkMs % (1000 * 60 * 60)) / (1000 * 60));
+                    const saniye = Math.floor((farkMs % (1000 * 60)) / 1000);
+                    
+                    el.style.color = "#2d3748";
+                    el.innerHTML = `<span style="font-size:0.8rem; color:#2b6cb0;">${plakaGelecek}</span><br>${gun}g ${saat}s ${dak}d <span style="display:inline-block; width:15px; text-align:left;">${saniye}</span>s`;
+                } else if (enYakinGecmis) {
+                    // Gelecek tarih yok ama eski tarih var -> Süresi doldu yazdır
+                    el.innerHTML = `<span style="font-size:0.8rem; color:#2b6cb0;">${plakaGecmis}</span><br><span style="color:#e53e3e; font-size: 0.9rem;">⚠️ Süresi Doldu</span>`;
+                } else {
+                    // Veritabanında hiçbir tarih bulunamadı
+                    el.innerText = "Tarih Bulunamadı";
+                    el.style.color = "#a0aec0";
+                }
+            });
+        }
+
+        // Geri sayımı saniyede bir kez çalıştır.
+        setInterval(guncelleGeriSayimlar, 1000);
     </script>
 </body>
 </html>
