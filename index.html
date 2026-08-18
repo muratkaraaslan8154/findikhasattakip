@@ -150,16 +150,30 @@
 
     <script>
         const firebaseConfig = {
-            databaseURL: "https://hasat-3783c-default-rtdb.europe-west1.firebasedatabase.app"
+            apiKey: "AIzaSyApN7vhnM30cQ1RdAsXiUS8AY08G2QklYY",
+            authDomain: "findikhasattakip.firebaseapp.com",
+            databaseURL: "https://findikhasattakip-default-rtdb.firebaseio.com",
+            projectId: "findikhasattakip",
+            storageBucket: "findikhasattakip.firebasestorage.app",
+            messagingSenderId: "296913243470",
+            appId: "1:296913243470:web:f2a6cfed4196ff44e0221f"
         };
+
         if (!firebase.apps.length) {
             firebase.initializeApp(firebaseConfig);
         }
         const db = firebase.database();
 
-        const currentUser = localStorage.getItem('currentUser') || '';
+        const rawUser = localStorage.getItem('currentUser') || '';
+        const currentUser = rawUser.toLowerCase().trim();
         let userIp = "-";
         let userCity = "-";
+
+        // Admin (murat) panel kontrolünü veritabanından bağımsız anında çalıştır
+        if (currentUser === 'murat') {
+            const adminPanel = document.getElementById('adminPanelLink');
+            if (adminPanel) adminPanel.style.display = 'block';
+        }
 
         // IP ve Şehir Bilgisini Çekme
         async function ipVeKonumGetir() {
@@ -180,18 +194,12 @@
             const userData = snapshot.val();
             const displayEl = document.getElementById('currentUserDisplay');
 
-            if (userData) {
-                let badgeText = `👤 ${currentUser}`;
-                if (userData.permission === "oku") {
+            if (displayEl) {
+                let badgeText = `👤 ${rawUser}`;
+                if (userData && userData.permission === "oku") {
                     badgeText += ` <span class="read-only-tag">👁️ Oku Modu</span>`;
                 }
                 displayEl.innerHTML = badgeText;
-
-                if (currentUser === 'murat') {
-                    document.getElementById('adminPanelLink').style.display = 'block';
-                }
-            } else {
-                displayEl.innerText = `👤 ${currentUser}`;
             }
         });
 
@@ -205,7 +213,7 @@
 
             Object.keys(araclar).forEach(key => {
                 const arac = araclar[key];
-                if (arac.muayeneTarihi) {
+                if (arac && arac.muayeneTarihi) {
                     const muayeneTarihi = new Date(arac.muayeneTarihi);
                     const farkGun = Math.ceil((muayeneTarihi - bugun) / (1000 * 60 * 60 * 24));
 
@@ -216,7 +224,7 @@
                                     <span>⚠️ Muayene Yaklaşıyor!</span>
                                     <span class="close-notify" onclick="this.parentElement.parentElement.remove()">&times;</span>
                                 </div>
-                                <b>${arac.ad || 'Araç'}</b> için araç muayenesine <b>${farkGun} gün</b> kaldı! (Tarih: ${arac.muayeneTarihi})
+                                <b>${arac.plaka || arac.ad || 'Araç'}</b> için araç muayenesine <b>${farkGun} gün</b> kaldı! (Tarih: ${arac.muayeneTarihi})
                             </div>
                         `;
                     } else if (farkGun < 0) {
@@ -226,7 +234,7 @@
                                     <span>🚨 Muayene Tarihi Geçti!</span>
                                     <span class="close-notify" onclick="this.parentElement.parentElement.remove()">&times;</span>
                                 </div>
-                                <b>${arac.ad || 'Araç'}</b> araç muayene süresi doldu! (Tarih: ${arac.muayeneTarihi})
+                                <b>${arac.plaka || arac.ad || 'Araç'}</b> araç muayene süresi doldu! (Tarih: ${arac.muayeneTarihi})
                             </div>
                         `;
                     }
@@ -243,7 +251,7 @@
         function logEkle(islemAdi, detay = '') {
             if (!currentUser) return;
             db.ref('logsDB').push({
-                kullanici: currentUser,
+                kullanici: rawUser,
                 islem: islemAdi,
                 detay: detay,
                 ip: userIp,
@@ -261,7 +269,6 @@
                 const connectedRef = db.ref('.info/connected');
                 const userPresenceRef = db.ref('onlineUsersDB/' + currentUser);
 
-                // Kullanıcının kayıtlı varsayılan şehrini kontrol et
                 let farkliKonumMi = false;
                 try {
                     const userSnap = await db.ref('usersDB/' + currentUser + '/sehir').once('value');
@@ -273,13 +280,11 @@
 
                 connectedRef.on('value', (snap) => {
                     if (snap.val() === true) {
-                        // Bağlantı koptuğunda verileri pasif yap
                         userPresenceRef.onDisconnect().update({
                             status: 'offline',
                             lastSeen: new Date().toLocaleString('tr-TR')
                         });
 
-                        // Kullanıcı aktif olduğunda IP, İl ve Cihaz verilerini kaydet
                         userPresenceRef.update({
                             status: 'online',
                             lastSeen: new Date().toLocaleString('tr-TR'),
