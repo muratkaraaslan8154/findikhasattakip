@@ -239,7 +239,10 @@
             const select = document.getElementById('aracPlaka');
             select.innerHTML = '<option value="">Araç Seçin...</option>';
             const arr = Array.isArray(list) ? list : Object.values(list);
-            arr.forEach(a => select.innerHTML += `<option value="${a}">${a}</option>`);
+            arr.forEach(a => {
+                const plaka = (typeof a === 'object' && a !== null) ? (a.plaka || a.arac || a.adi || Object.values(a)[0] || '') : a;
+                if (plaka) select.innerHTML += `<option value="${plaka}">${plaka}</option>`;
+            });
             if (varsayilanlar.arac) select.value = varsayilanlar.arac;
         });
 
