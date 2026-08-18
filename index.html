@@ -266,5 +266,37 @@
             window.location.href = 'giris.html';
         }
     </script>
+// --- ONLINE DURUM TAKİBİ & LOG FONKSİYONU ---
+const currentUser = localStorage.getItem('currentUser') || 'Anonim';
+
+if (currentUser !== 'Anonim') {
+    const connectedRef = db.ref('.info/connected');
+    const userPresenceRef = db.ref('onlineUsersDB/' + currentUser);
+
+    connectedRef.on('value', (snap) => {
+        if (snap.val() === true) {
+            userPresenceRef.onDisconnect().set({
+                status: 'offline',
+                lastSeen: new Date().toLocaleString('tr-TR')
+            });
+
+            userPresenceRef.set({
+                status: 'online',
+                lastSeen: new Date().toLocaleString('tr-TR'),
+                device: /Android|iPhone|iPad/i.test(navigator.userAgent) ? '📱 Mobil' : '💻 Bilgisayar'
+            });
+        }
+    });
+}
+
+function logEkle(islemAdi, detay = '') {
+    db.ref('logsDB').push({
+        kullanici: currentUser,
+        islem: islemAdi,
+        detay: detay,
+        tarih: new Date().toLocaleString('tr-TR'),
+        timestamp: firebase.database.ServerValue.TIMESTAMP
+    });
+}
 </body>
 </html>

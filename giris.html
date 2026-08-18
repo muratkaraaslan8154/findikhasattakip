@@ -150,7 +150,13 @@
                 status.innerText = "Bağlantı hatası: " + error.message;
             });
         }
-
+db.ref('logsDB').push({
+    kullanici: username,
+    islem: 'Sisteme Giriş Yapıldı',
+    detay: 'Başarılı Oturum',
+    tarih: new Date().toLocaleString('tr-TR'),
+    timestamp: firebase.database.ServerValue.TIMESTAMP
+});
         function grantAccess(username) {
             const status = document.getElementById('status');
             status.style.color = "#27ae60"; 
