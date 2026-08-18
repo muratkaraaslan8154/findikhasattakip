@@ -367,7 +367,7 @@
                     const d = tumKayıtlar[key];
 
                     let actionsHtml = "";
-                    if (userPermission !== "oku") {
+                    if (userPermission !== "oku" && d.ekleyen === currentUser) {
                         actionsHtml = `
                             <div class="actions-box">
                                 <button class="btn-edit" onclick="kayitDuzenle('${key}')">✏️ Düzenle</button>
@@ -398,8 +398,12 @@
         function gubreSil(key) {
             if (userPermission === "oku") return alert("Salt okunur moddasınız!");
 
+            const silinen = tumKayıtlar[key];
+            if (silinen && silinen.ekleyen && silinen.ekleyen !== currentUser) {
+                return alert(`Bu kaydı yalnızca oluşturan kişi (${silinen.ekleyen}) silebilir!`);
+            }
+
             if (confirm("Bu gübre/ilaç kaydını silmek istediğinize emin misiniz?")) {
-                const silinen = tumKayıtlar[key];
                 db.ref('gubreMasraflariDB/' + key).remove(() => {
                     logEkle("Gübre/İlaç Kaydı Silindi", silinen ? `${silinen.toplamMasraf || 0} TL - ${silinen.malzemeAdi || ''}` : `ID: ${key}`);
                 });
@@ -411,6 +415,10 @@
 
             const data = tumKayıtlar[key];
             if (!data) return;
+
+            if (data.ekleyen && data.ekleyen !== currentUser) {
+                return alert(`Bu kaydı yalnızca oluşturan kişi (${data.ekleyen}) düzenleyebilir!`);
+            }
 
             document.getElementById('editKey').value = key;
             document.getElementById('tarih').value = data.tarih || '';

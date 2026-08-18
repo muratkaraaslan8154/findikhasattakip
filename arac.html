@@ -245,6 +245,8 @@
             for (let key of keys) {
                 const item = tumAracMasraflari[key];
                 const imgHtml = item.foto ? `<img src="${item.foto}" class="img-thumb" onclick="window.open('${item.foto}')">` : '-';
+                const canModify = (userPermission !== "oku") && (item.ekleyen === currentUser);
+                
                 tbody.innerHTML += `
                     <tr>
                         <td>${imgHtml}</td>
@@ -252,7 +254,7 @@
                         <td><b>${item.plaka}</b><br><span style="font-size:0.75rem; color:#718096;">${item.tur}</span></td>
                         <td><b>${item.tutar} TL</b>${item.km ? `<br><span style="font-size:0.75rem; color:#718096;">${item.km} KM</span>` : ''}</td>
                         <td>${item.aciklama || '-'}</td>
-                        ${userPermission !== "oku" ? `<td><button class="btn-del" onclick="aracMasrafSil('${key}')">Sil</button></td>` : ''}
+                        <td>${canModify ? `<button class="btn-del" onclick="aracMasrafSil('${key}')">Sil</button>` : '-'}</td>
                     </tr>`;
             }
         }
@@ -307,8 +309,13 @@
 
         function aracMasrafSil(key) {
             if (userPermission === "oku") return alert("Yetkiniz yok!");
+            
+            const silinen = tumAracMasraflari[key];
+            if (silinen && silinen.ekleyen && silinen.ekleyen !== currentUser) {
+                return alert(`Bu kaydı yalnızca oluşturan kişi (${silinen.ekleyen}) silebilir!`);
+            }
+
             if (confirm("Silmek istediğinize emin misiniz?")) {
-                const silinen = tumAracMasraflari[key];
                 db.ref('aracMasraflariDB/' + key).remove(() => {
                     logEkle("Araç Masrafı Silindi", silinen ? `${silinen.tutar || 0} TL - ${silinen.plaka || ''} (${silinen.tur || ''})` : `ID: ${key}`);
                 });

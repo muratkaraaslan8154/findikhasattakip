@@ -220,13 +220,15 @@
             const keys = Object.keys(tumBakimlar).reverse();
             for (let key of keys) {
                 const item = tumBakimlar[key];
+                const canModify = (userPermission !== "oku") && (item.ekleyen === currentUser);
+                
                 tbody.innerHTML += `
                     <tr>
                         <td>${item.tarih}</td>
                         <td><b>${item.tur}</b></td>
                         <td><b>${item.tutar} TL</b></td>
                         <td>${item.aciklama || '-'}</td>
-                        ${userPermission !== "oku" ? `<td><button class="btn-del" onclick="bakimSil('${key}')">Sil</button></td>` : ''}
+                        <td>${canModify ? `<button class="btn-del" onclick="bakimSil('${key}')">Sil</button>` : '-'}</td>
                     </tr>`;
             }
         }
@@ -258,8 +260,13 @@
 
         function bakimSil(key) {
             if (userPermission === "oku") return;
+            
+            const silinen = tumBakimlar[key];
+            if (silinen && silinen.ekleyen && silinen.ekleyen !== currentUser) {
+                return alert(`Bu kaydı yalnızca oluşturan kişi (${silinen.ekleyen}) silebilir!`);
+            }
+
             if (confirm("Bu bakım kaydını silmek istediğinize emin misiniz?")) {
-                const silinen = tumBakimlar[key];
                 db.ref('bakimMasraflariDB/' + key).remove(() => {
                     logEkle("Bakım Masrafı Silindi", silinen ? `${silinen.tutar || 0} TL - ${silinen.tur || ''}` : `ID: ${key}`);
                 });

@@ -260,7 +260,7 @@
                     const d = tumKayıtlar[key];
 
                     let actionsHtml = "";
-                    if (userPermission !== "oku") {
+                    if (userPermission !== "oku" && d.ekleyen === currentUser) {
                         actionsHtml = `
                             <div class="actions-box">
                                 <button class="btn-edit" onclick="kayitDuzenle('${key}')">✏️ Düzenle</button>
@@ -291,8 +291,12 @@
         function faturaSil(key) {
             if (userPermission === "oku") return alert("Salt okunur moddasınız!");
 
+            const silinen = tumKayıtlar[key];
+            if (silinen && silinen.ekleyen && silinen.ekleyen !== currentUser) {
+                return alert(`Bu kaydı yalnızca oluşturan kişi (${silinen.ekleyen}) silebilir!`);
+            }
+
             if (confirm("Bu fatura kaydını silmek istediğinize emin misiniz?")) {
-                const silinen = tumKayıtlar[key];
                 db.ref('faturaMasraflariDB/' + key).remove(() => {
                     logEkle("Fatura Kaydı Silindi", silinen ? `${silinen.tutar || 0} TL - ${silinen.tur || ''}` : `ID: ${key}`);
                 });
@@ -304,6 +308,10 @@
 
             const data = tumKayıtlar[key];
             if (!data) return;
+
+            if (data.ekleyen && data.ekleyen !== currentUser) {
+                return alert(`Bu kaydı yalnızca oluşturan kişi (${data.ekleyen}) düzenleyebilir!`);
+            }
 
             document.getElementById('editKey').value = key;
             document.getElementById('faturaTurSelect').value = data.tur || '';
