@@ -150,23 +150,23 @@
                 status.innerText = "Bağlantı hatası: " + error.message;
             });
         }
-db.ref('logsDB').push({
-    kullanici: username,
-    islem: 'Sisteme Giriş Yapıldı',
-    detay: 'Başarılı Oturum',
-    tarih: new Date().toLocaleString('tr-TR'),
-    timestamp: firebase.database.ServerValue.TIMESTAMP
-});
-        function grantAccess(username) {
-            const status = document.getElementById('status');
-            status.style.color = "#27ae60"; 
-            status.innerText = "Giriş Başarılı! Yönlendiriliyor...";
-            
-            localStorage.setItem('currentUser', username);
-            localStorage.setItem('isLoggedIn', 'true');
-            
-            setTimeout(() => { window.location.href = 'index.html?auth=ok'; }, 1000);
-        }
-    </script>
+function grantAccess(username) {
+    db.ref('logsDB').push({
+        kullanici: username,
+        islem: 'Sisteme Giriş Yapıldı',
+        detay: 'Başarılı Oturum',
+        tarih: new Date().toLocaleString('tr-TR'),
+        timestamp: firebase.database.ServerValue.TIMESTAMP
+    });
+
+    const status = document.getElementById('status');
+    status.style.color = "#27ae60";
+    status.innerText = "Giriş Başarılı! Yönlendiriliyor...";
+
+    localStorage.setItem('currentUser', username);
+    localStorage.setItem('isLoggedIn', 'true');
+
+    setTimeout(() => { window.location.href = 'index.html?auth=ok'; }, 1000);
+}    </script>
 </body>
 </html>
