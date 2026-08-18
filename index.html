@@ -184,7 +184,6 @@
             const simdi = new Date().getTime();
             let htmlContent = "";
 
-            // Kırmızı Kutudaki Genel Uyarı Ayarlarını Kontrol Et
             const genelTurler = [
                 { key: 'muayene', etiket: '📋 Muayene' },
                 { key: 'sigorta', etiket: '🛡️ Sigorta' },
@@ -262,14 +261,30 @@
         }
 
         function cikisYap() {
+            logEkle("Sistemden Çıkış Yapıldı", "");
+            if (currentUser) {
+                db.ref('onlineUsersDB/' + currentUser).set({
+                    status: 'offline',
+                    lastSeen: new Date().toLocaleString('tr-TR')
+                });
+            }
             localStorage.removeItem('isLoggedIn');
             window.location.href = 'giris.html';
         }
 
-        // --- ONLINE DURUM TAKİBİ & LOG FONKSİYONU ---
-        const currentUser = localStorage.getItem('currentUser') || 'Anonim';
+        // --- ONLINE DURUM TAKİBİ & LOG FONKSİYONLARI ---
+        function logEkle(islemAdi, detay = '') {
+            if (!currentUser) return;
+            db.ref('logsDB').push({
+                kullanici: currentUser,
+                islem: islemAdi,
+                detay: detay,
+                tarih: new Date().toLocaleString('tr-TR'),
+                timestamp: firebase.database.ServerValue.TIMESTAMP
+            });
+        }
 
-        if (currentUser !== 'Anonim') {
+        if (currentUser) {
             const connectedRef = db.ref('.info/connected');
             const userPresenceRef = db.ref('onlineUsersDB/' + currentUser);
 
@@ -287,16 +302,9 @@
                     });
                 }
             });
-        }
 
-        function logEkle(islemAdi, detay = '') {
-            db.ref('logsDB').push({
-                kullanici: currentUser,
-                islem: islemAdi,
-                detay: detay,
-                tarih: new Date().toLocaleString('tr-TR'),
-                timestamp: firebase.database.ServerValue.TIMESTAMP
-            });
+            // Ana sayfaya girildiği an log kaydı yap
+            logEkle("Sayfa Ziyareti", "Ana Menü");
         }
     </script>
 </body>
