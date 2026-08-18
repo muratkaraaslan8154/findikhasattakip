@@ -41,19 +41,18 @@
 
         /* Modal Pencere Stilleri */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 1000; }
-        .modal-content { background: white; border-radius: 12px; padding: 1.5rem; width: 90%; max-width: 700px; max-height: 80vh; overflow-y: auto; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
-        .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; margin-bottom: 15px; }
-        .modal-header h3 { margin: 0; color: #2b6cb0; }
-        .close-modal { cursor: pointer; font-size: 1.4rem; font-weight: bold; color: #718096; }
+        .modal-box { background: white; padding: 20px; border-radius: 12px; max-width: 700px; width: 90%; max-height: 80vh; overflow-y: auto; position: relative; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+        .close-modal { position: absolute; top: 15px; right: 20px; font-size: 1.5rem; cursor: pointer; color: #a0aec0; }
+        .close-modal:hover { color: #e53e3e; }
     </style>
 </head>
 <body>
 
     <div class="container">
-        <button class="btn-back" onclick="window.location.href='index.html'">⬅️ Ana Menüye Dön</button>
+        <button class="btn-back" onclick="window.location.href='index.html'">⬅ Ana Menüye Dön</button>
 
         <div class="card">
-            <h2>👥 Kullanıcı Durumu & Konum Takibi (Canlı)</h2>
+            <h2>🟢 Anlık Kullanıcı Durumları & Konum Bilgileri</h2>
             <table>
                 <thead>
                     <tr>
@@ -61,10 +60,10 @@
                         <th>Durum</th>
                         <th>Cihaz</th>
                         <th>IP Adresi</th>
-                        <th>Lokasyon (İl)</th>
-                        <th>Son Görülme / İşlem</th>
-                        <th>Konum Durumu</th>
-                        <th>Geçmiş</th>
+                        <th>Şehir</th>
+                        <th>Son Görülme</th>
+                        <th>Konum</th>
+                        <th>İşlem</th>
                     </tr>
                 </thead>
                 <tbody id="onlineUserTable">
@@ -75,8 +74,8 @@
 
         <div class="card">
             <h2>
-                📜 Sistem Hareket & İşlem Günlüğü
-                <button class="btn-clear" onclick="loglariTemizle()">Logları Temizle</button>
+                📜 Sistem İşlem Geçmişi (Son 50)
+                <button class="btn-clear" onclick="loglariTemizle()">🗑️ Tüm Logları Temizle</button>
             </h2>
             <table>
                 <thead>
@@ -84,7 +83,7 @@
                         <th>Tarih / Saat</th>
                         <th>Kullanıcı</th>
                         <th>IP / Şehir</th>
-                        <th>Yapılan İşlem</th>
+                        <th>İşlem</th>
                         <th>Detay</th>
                     </tr>
                 </thead>
@@ -95,56 +94,51 @@
         </div>
     </div>
 
-    <div id="historyModal" class="modal-overlay">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 id="modalTitle">Giriş Geçmişi</h3>
-                <span class="close-modal" onclick="modalKapat()">✕</span>
-            </div>
-            <div id="modalBody">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Tarih</th>
-                            <th>Saat</th>
-                            <th>IP Adresi</th>
-                            <th>Şehir / Lokasyon</th>
-                            <th>Durum</th>
-                        </tr>
-                    </thead>
-                    <tbody id="historyTable">
-                        <tr><td colspan="5">Yükleniyor...</td></tr>
-                    </tbody>
-                </table>
-            </div>
+    <div class="modal-overlay" id="historyModal">
+        <div class="modal-box">
+            <span class="close-modal" onclick="modalKapat()">&times;</span>
+            <h3 id="modalTitle" style="color:#2b6cb0; margin-top:0;">📅 Kullanıcı Giriş & Lokasyon Geçmişi</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Tarih</th>
+                        <th>Saat</th>
+                        <th>IP Adresi</th>
+                        <th>Şehir</th>
+                        <th>Lokasyon Durumu</th>
+                    </tr>
+                </thead>
+                <tbody id="historyTable">
+                    <tr><td colspan="5">Yükleniyor...</td></tr>
+                </tbody>
+            </table>
         </div>
     </div>
 
     <script>
+        // Firebase Yapılandırması
         const firebaseConfig = {
-            apiKey: "AIzaSyApN7vhnM30cQ1RdAsXiUS8AY08G2QklYY",
-            authDomain: "findikhasattakip.firebaseapp.com",
-            databaseURL: "https://findikhasattakip-default-rtdb.firebaseio.com",
-            projectId: "findikhasattakip",
-            storageBucket: "findikhasattakip.firebasestorage.app",
-            messagingSenderId: "296913243470",
-            appId: "1:296913243470:web:f2a6cfed4196ff44e0221f"
+            databaseURL: "https://hasat-3783c-default-rtdb.europe-west1.firebasedatabase.app"
         };
-        firebase.initializeApp(firebaseConfig);
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
         const db = firebase.database();
 
         // 🟢 Online Kullanıcıları ve IP/Şehir Bilgilerini Canlı Dinle
         db.ref('onlineUsersDB').on('value', (snapshot) => {
-            const users = snapshot.val() || {};
             const tbody = document.getElementById('onlineUserTable');
             tbody.innerHTML = "";
 
-            if (Object.keys(users).length === 0) {
+            if (!snapshot.exists()) {
                 tbody.innerHTML = "<tr><td colspan='8'>Aktif kullanıcı bulunmuyor.</td></tr>";
                 return;
             }
 
-            for (const [username, data] of Object.entries(users)) {
+            snapshot.forEach((childSnap) => {
+                const username = childSnap.key;
+                const data = childSnap.val();
+
                 const isOnline = data.status === 'online';
                 const statusBadge = isOnline 
                     ? `<span class="badge-online">🟢 Çevrimiçi</span>` 
@@ -170,23 +164,26 @@
                         </td>
                     </tr>
                 `;
-            }
+            });
         });
 
-        // 📜 İşlem Loglarını Canlı Dinle (Son 50 İşlem)
+        // 📜 İşlem Loglarını Canlı Dinle (Son 50 İşlem - Doğru Kronolojik Sıralama)
         db.ref('logsDB').orderByChild('timestamp').limitToLast(50).on('value', (snapshot) => {
-            const logs = snapshot.val() || {};
             const tbody = document.getElementById('logTable');
             tbody.innerHTML = "";
 
-            const logList = Object.values(logs).reverse();
-
-            if (logList.length === 0) {
+            if (!snapshot.exists()) {
                 tbody.innerHTML = "<tr><td colspan='5'>Henüz işlem kaydı yok.</td></tr>";
                 return;
             }
 
-            logList.forEach(log => {
+            const logList = [];
+            snapshot.forEach(childSnap => {
+                logList.push(childSnap.val());
+            });
+
+            // En yeni log en üstte görünecek şekilde sıralamayı ters çeviriyoruz
+            logList.reverse().forEach(log => {
                 const isFarkli = log.farkliLokasyon || (log.islem && log.islem.includes('Farklı Lokasyon'));
                 const islemStili = isFarkli 
                     ? `<span style="color:#e53e3e; font-weight:bold;">${log.islem}</span>` 
@@ -216,18 +213,19 @@
             document.getElementById('historyModal').style.display = 'flex';
 
             db.ref('loginHistoryDB/' + username).once('value', (snapshot) => {
-                const history = snapshot.val() || {};
                 historyTable.innerHTML = "";
 
-                const keys = Object.keys(history).reverse();
-
-                if (keys.length === 0) {
+                if (!snapshot.exists()) {
                     historyTable.innerHTML = "<tr><td colspan='5' style='text-align:center;'>Geçmiş giriş kaydı bulunamadı.</td></tr>";
                     return;
                 }
 
-                keys.forEach(k => {
-                    const item = history[k];
+                const historyList = [];
+                snapshot.forEach(child => {
+                    historyList.push(child.val());
+                });
+
+                historyList.reverse().forEach(item => {
                     const durumBadge = item.farkliLokasyon 
                         ? `<span class="badge-alert">⚠️ Farklı Konum</span>` 
                         : `<span class="badge-normal">✅ Normal</span>`;
